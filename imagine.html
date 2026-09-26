@@ -405,6 +405,24 @@
       <label class="filebtn" for="cm-folderInput">Select Folder…</label>
       <input type="file" id="cm-folderInput" webkitdirectory directory multiple>
       <div class="status" id="cm-sourceStatus">No folder selected</div>
+
+      <div class="toggle-row" style="margin-top:10px;">
+        <span>Include Subfolders</span>
+        <label class="switch"><input type="checkbox" id="cm-recurse" checked><span class="slider-toggle"></span></label>
+      </div>
+      <div class="field" id="cm-perFolderField">
+        <label>Images per Folder</label>
+        <select id="cm-perFolder">
+          <option value="-1" selected>All</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="8">8</option>
+          <option value="16">16</option>
+          <option value="32">32</option>
+        </select>
+        <div class="hint">Picks that many at random from the chosen folder and each of its subfolders. Shuffle Layout picks a new set.</div>
+      </div>
     </section>
 
     <section>
@@ -1740,6 +1758,9 @@ const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|avif|svg)$/i;
 const els = {
   folderInput: document.getElementById("cm-folderInput"),
   sourceStatus: document.getElementById("cm-sourceStatus"),
+  recurse: document.getElementById("cm-recurse"),
+  perFolderField: document.getElementById("cm-perFolderField"),
+  perFolder: document.getElementById("cm-perFolder"),
   outW: document.getElementById("cm-outW"),
   outH: document.getElementById("cm-outH"),
   gap: document.getElementById("cm-gap"),
@@ -1762,49 +1783,115 @@ let currentLayout = []; // { x,y,w,h (normalized 0..1), imgIndex, rotFrac (-1..1
 
 /* ============================================================ LOADING ============================================================ */
 
-els.folderInput.addEventListener("change", async () => {
-  const files = Array.from(els.folderInput.files).filter(
-    f => f.type.startsWith("image/") || IMAGE_EXT_RE.test(f.name)
-  );
+let sourceFiles = [];          // every image file under the chosen folder
+const imageCache = new Map();  // File -> HTMLImageElement, or null if it didn't decode
+let selectionToken = 0;        // lets a newer selection supersede one still loading
+
+// "Holiday/Beach/a.jpg" -> "Holiday/Beach". Files picked without a folder
+// (Android's photo picker) have no path and all count as one folder.
+function folderOf(file) {
+  const p = file.webkitRelativePath || "";
+  return p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
+}
+function isInChosenFolder(file) {
+  return (file.webkitRelativePath || "").split("/").length <= 2;
+}
+
+function shuffled(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Chooses the collage's files from the Source options: only the chosen
+// folder, or it and every subfolder -- optionally n at random from each.
+function selectFiles() {
+  const files = els.recurse.checked ? sourceFiles : sourceFiles.filter(isInChosenFolder);
+  const groups = new Map();
+  files.forEach(f => {
+    const key = folderOf(f);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(f);
+  });
+  const perFolder = +els.perFolder.value;
+  if (!els.recurse.checked || perFolder < 0) return { files, folders: groups.size };
+  const picked = [];
+  groups.forEach(list => picked.push(...shuffled(list).slice(0, perFolder)));
+  return { files: picked, folders: groups.size };
+}
+
+function loadImage(file) {
+  if (imageCache.has(file)) return Promise.resolve(imageCache.get(file));
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); imageCache.set(file, img); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); imageCache.set(file, null); resolve(null); }; // skip unreadable files
+    img.src = url;
+  });
+}
+
+// Loads whichever selected images aren't loaded yet, then lays them out.
+async function refreshSelection() {
+  if (sourceFiles.length === 0) return;
+  const token = ++selectionToken;
+  const { files, folders } = selectFiles();
   if (files.length === 0) {
-    els.sourceStatus.textContent = "No images found in that folder.";
+    images = [];
+    currentLayout = [];
+    ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+    els.btnShuffle.disabled = true;
+    els.btnExport.disabled = true;
+    els.sourceStatus.textContent = "No images directly in that folder. Turn on Include Subfolders to use its subfolders.";
     return;
   }
 
-  els.sourceStatus.textContent = `Loading 0 / ${files.length} images…`;
-  images = [];
+  const toLoad = files.filter(f => !imageCache.has(f));
   let loaded = 0;
+  if (toLoad.length) els.sourceStatus.textContent = `Loading 0 / ${toLoad.length} images…`;
+  await Promise.all(toLoad.map(f => loadImage(f).then(() => {
+    loaded++;
+    if (token === selectionToken) els.sourceStatus.textContent = `Loading ${loaded} / ${toLoad.length} images…`;
+  })));
+  if (token !== selectionToken) return;
 
-  const loadOne = (file) => new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      images.push({ img });
-      loaded++;
-      els.sourceStatus.textContent = `Loading ${loaded} / ${files.length} images…`;
-      resolve();
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      loaded++;
-      resolve(); // skip unreadable files without blocking the rest
-    };
-    img.src = url;
-  });
-
-  await Promise.all(files.map(loadOne));
-
+  images = files.map(f => imageCache.get(f)).filter(Boolean).map(img => ({ img }));
   if (images.length === 0) {
     els.sourceStatus.textContent = "Couldn't load any images from that folder.";
     return;
   }
 
-  els.sourceStatus.textContent = `${images.length} image${images.length === 1 ? "" : "s"} loaded.`;
+  const perFolder = +els.perFolder.value;
+  const from = els.recurse.checked && perFolder > 0
+    ? ` (up to ${perFolder} from each of ${folders} folder${folders === 1 ? "" : "s"})`
+    : folders > 1 ? ` from ${folders} folders` : "";
+  els.sourceStatus.textContent = `${images.length} image${images.length === 1 ? "" : "s"} loaded${from}.`;
   els.btnShuffle.disabled = false;
   els.btnExport.disabled = false;
   buildLayoutAndRender();
+}
+
+els.folderInput.addEventListener("change", () => {
+  sourceFiles = Array.from(els.folderInput.files).filter(
+    f => f.type.startsWith("image/") || IMAGE_EXT_RE.test(f.name)
+  );
+  imageCache.clear();
+  images = [];
+  if (sourceFiles.length === 0) {
+    els.sourceStatus.textContent = "No images found in that folder.";
+    return;
+  }
+  refreshSelection();
 });
+
+els.recurse.addEventListener("change", () => {
+  els.perFolderField.hidden = !els.recurse.checked;
+  refreshSelection();
+});
+els.perFolder.addEventListener("change", refreshSelection);
 
 /* ============================================================ LAYOUT (recursive space partition) ============================================================ */
 // Recursively splits the canvas rectangle in two, sending a random-ish
@@ -1942,7 +2029,11 @@ els.maxAngle.addEventListener("input", () => { els.angleVal.textContent = els.ma
 );
 [els.outW, els.outH].forEach(el => el.addEventListener("change", render));
 
-els.btnShuffle.addEventListener("click", buildLayoutAndRender);
+// With n images per folder, a shuffle also picks a new random set.
+els.btnShuffle.addEventListener("click", () => {
+  if (els.recurse.checked && +els.perFolder.value > 0) refreshSelection();
+  else buildLayoutAndRender();
+});
 
 els.btnExport.addEventListener("click", () => {
   els.renderStatus.textContent = "Exporting…";
