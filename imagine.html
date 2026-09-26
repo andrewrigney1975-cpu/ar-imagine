@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1c1f27">
 <meta name="description" content="Imagine — image creation and editing tools.">
 <meta name="mobile-web-app-capable" content="yes">
@@ -23,14 +23,16 @@
   :root{
     --bg:#15171c; --panel:#1c1f27; --panel-2:#232732; --border:#2c313d;
     --text:#e7e9ee; --dim:#8b93a1; --accent:#6c8cff; --header-h:52px; --rail-w:76px;
+    color-scheme:dark;
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; height:100%; background:var(--bg); color:var(--text);
     font:13px/1.4 "Google Sans", -apple-system, Segoe UI, Roboto, sans-serif; }
 
   #topbar{
-    height:var(--header-h); flex:none; display:flex; align-items:center; gap:12px;
-    padding:0 18px; background:var(--panel); border-bottom:1px solid var(--border);
+    /* Insets are non-zero only edge-to-edge (Android app, iOS standalone). */
+    height:calc(var(--header-h) + env(safe-area-inset-top, 0px)); flex:none; display:flex; align-items:center; gap:12px;
+    padding:env(safe-area-inset-top, 0px) 18px 0; background:var(--panel); border-bottom:1px solid var(--border);
   }
   #topbar .brand{ display:flex; align-items:center; gap:9px; }
   #topbar .brand-mark{
@@ -49,9 +51,11 @@
     white-space:nowrap;
   }
   .header-btn:hover{ border-color:#3c4356; }
+  /* Import is a <label class="filebtn">; keep it the same size as the buttons beside it. */
+  .header-btn.filebtn{ font-size:12px; padding:6px 12px; }
   .header-status{ font-size:11px; color:var(--dim); max-width:220px; }
 
-  #app{ display:flex; flex-direction:column; height:100%; }
+  #app{ display:flex; flex-direction:column; height:100%; padding-bottom:env(safe-area-inset-bottom, 0px); background:var(--panel); }
   #main{ flex:1; display:flex; min-height:0; }
 
   #toolstrip{
@@ -178,6 +182,26 @@
   .modeTabs button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .tool-stage[data-tool="tilt-shift"] canvas{ cursor:grab; }
   .tool-stage[data-tool="tilt-shift"] canvas.dragging{ cursor:grabbing; }
+
+  /* ---- phones: tools across the top, the image below, controls underneath ---- */
+  @media (max-width: 760px){
+    #topbar{ padding-left:12px; padding-right:12px; gap:8px; }
+    #topbar .divider, #topbar .active-tool-label{ display:none; }
+    .header-btn, .header-btn.filebtn{ padding:6px 10px; }
+    .header-status:empty{ display:none; }
+    #main{ flex-direction:column; }
+    #toolstrip{
+      order:0; width:auto; flex-direction:row; padding:6px; gap:4px;
+      border-right:none; border-bottom:1px solid var(--border);
+    }
+    .tool-btn{ flex:1; padding:7px 2px 6px; }
+    #stageWrap{ order:1; flex:none; height:40vh; padding:12px; }
+    #sidebar{
+      order:2; flex:1; min-height:0; width:auto;
+      border-right:none; border-top:1px solid var(--border); padding:16px 16px 32px;
+    }
+    #sidebar h1{ display:none; }
+  }
 
 </style>
 </head>
@@ -647,6 +671,65 @@
     </div>
   </div>
 </div>
+
+<script>
+// Android app (Capacitor): the WebView can't follow <a download> links, so
+// every export is handed to the native ImagineFiles plugin instead, which
+// saves images to Pictures/Imagine and anything else to Download/Imagine.
+// Android has no folder upload, so "Select Folder…" becomes a multi-photo
+// picker. Does nothing in a browser or the desktop app.
+(function () {
+  "use strict";
+  const cap = window.Capacitor;
+  if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return;
+
+  document.querySelectorAll("input[type=file][webkitdirectory]").forEach(input => {
+    input.removeAttribute("webkitdirectory");
+    input.removeAttribute("directory");
+    input.setAttribute("accept", "image/*");
+    const label = document.querySelector(`label[for="${input.id}"]`);
+    if (label) label.textContent = "Select Photos…";
+  });
+
+  const toast = document.createElement("div");
+  toast.style.cssText = "position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));" +
+    "transform:translateX(-50%);background:#2c313d;color:#e7e9ee;padding:8px 14px;border-radius:8px;" +
+    "font-size:12.5px;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:10";
+  document.body.appendChild(toast);
+  let toastTimer;
+  function showToast(text) {
+    toast.textContent = text;
+    toast.style.opacity = "1";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.opacity = "0"; }, 2500);
+  }
+
+  function toBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.slice(reader.result.indexOf(",") + 1));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  const nativeClick = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function () {
+    if (!this.download || !this.href.startsWith("blob:")) return nativeClick.call(this);
+    const filename = this.download;
+    // The callers revoke the blob URL after 10s; fetch it straight away.
+    fetch(this.href)
+      .then(res => res.blob())
+      .then(async blob => {
+        const { folder } = await cap.Plugins.ImagineFiles.save({
+          filename, mimeType: blob.type || "application/octet-stream", data: await toBase64(blob)
+        });
+        showToast(`Saved to ${folder}`);
+      })
+      .catch(err => showToast(`Couldn't save ${filename}: ${err.message || err}`));
+  };
+})();
+</script>
 
 <script>
 (function () {

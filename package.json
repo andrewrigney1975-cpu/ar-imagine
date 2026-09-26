@@ -11,7 +11,8 @@
     "start": "electron .",
     "icon": "electron electron/make-icon.js",
     "dist": "electron-builder",
-    "dist:dir": "electron-builder --dir"
+    "dist:dir": "electron-builder --dir",
+    "android:sync": "node -e \"const fs=require('fs');fs.rmSync('www',{recursive:true,force:true});fs.mkdirSync('www');fs.copyFileSync('imagine.html','www/index.html');for(const f of ['manifest.webmanifest','pwa.js'])fs.copyFileSync(f,'www/'+f);fs.cpSync('icons','www/icons',{recursive:true})\" && cap sync android"
   },
   "build": {
     "appId": "com.andrewrigney.imagine",
@@ -50,11 +51,16 @@
     }
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "electron": "^44.4.5",
     "electron-builder": "^26.15.3"
   },
   "allowScripts": {
     "electron@44.4.5": true,
     "electron-winstaller@5.4.0": true
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
   }
 }
