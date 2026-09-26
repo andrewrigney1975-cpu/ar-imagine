@@ -3,11 +3,11 @@
 Five image tools in a single HTML page: an editor, a collage maker, a retro palette quantizer, a blur tool and a tilt-shift miniature effect. Everything runs locally in the browser, so photos never leave your device. It's packaged for the web (Docker + nginx, installable as a PWA), Windows desktop (Electron) and Android (Capacitor).
 
 <p align="center">
-  <img src="docs/desktop-editor.png" alt="Imagine's Image Editor on the desktop, with a sunset photo loaded and a crop box drawn over it" width="800">
+  <img src="docs/desktop-editor.png" alt="Imagine's Image Editor on the desktop, with a Duotone filter turning a sunset photo navy and peach, and the Filter panel open" width="800">
 </p>
 
 <p align="center">
-  <img src="docs/android-editor.png" alt="Imagine's Image Editor on a Pixel 10a" width="240">
+  <img src="docs/android-editor.png" alt="Imagine's Image Editor on a Pixel 10a, with a Tritone filter and its three colour pickers" width="240">
   &nbsp;
   <img src="docs/android-quantizer.png" alt="Imagine's Quantizer on a Pixel 10a" width="240">
   &nbsp;
@@ -16,7 +16,7 @@ Five image tools in a single HTML page: an editor, a collage maker, a retro pale
 
 ## Tools
 
-- **Image Editor**: rotate (90° steps plus a fine angle), crop freely or to a fixed aspect ratio (original, 1:1, 4:3, 3:4, 16:9, 9:16, 3:2), set the output size, and adjust hue, brightness, saturation and contrast.
+- **Image Editor**: rotate (90° steps plus a fine angle), crop freely or to a fixed aspect ratio (original, 1:1, 4:3, 3:4, 16:9, 9:16, 3:2), set the output size, and adjust hue, brightness, saturation and contrast. Colour filters: greyscale, black & white, B&W vivid, duotone and tritone (with your choice of colours), sepia, colourise (an overall tint), invert and cross-process, each with adjustable strength.
 - **Collage Maker**: lays out a folder of photos at any output size, with adjustable gaps, an optional coloured border, optional random rotation, and a shuffle button for a new layout.
 - **Quantizer**: reduces a photo to a retro palette, either B&W (1-bit), Commodore 64, CGA, EGA, VGA, Amiga EHB and HAM, or a custom best-fit palette of up to 256 colours. Seven dithering modes are available, including Floyd–Steinberg and 8×8 Bayer.
 - **Image Blur**: Gaussian, box or hexagonal blur at an adjustable strength.
