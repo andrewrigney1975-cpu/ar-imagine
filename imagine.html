@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c1f27">
+<meta name="description" content="Imagine — image creation and editing tools.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Imagine">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script src="pwa.js" defer></script>
+<title>Imagine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:#15171c; --panel:#1c1f27; --panel-2:#232732; --border:#2c313d;
+    --text:#e7e9ee; --dim:#8b93a1; --accent:#6c8cff; --header-h:52px; --rail-w:76px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; background:var(--bg); color:var(--text);
+    font:13px/1.4 "Google Sans", -apple-system, Segoe UI, Roboto, sans-serif; }
+
+  #topbar{
+    height:var(--header-h); flex:none; display:flex; align-items:center; gap:12px;
+    padding:0 18px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  #topbar .brand{ display:flex; align-items:center; gap:9px; }
+  #topbar .brand-mark{
+    width:26px; height:26px; border-radius:7px;
+    background:linear-gradient(135deg, #7b8bff, #4f5fd6);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;
+  }
+  #topbar .brand-name{ font-size:15px; font-weight:700; letter-spacing:.01em; }
+  #topbar .divider{ width:1px; height:22px; background:var(--border); }
+  #topbar .active-tool-label{ font-size:12.5px; color:var(--dim); }
+  .header-spacer{ flex:1; }
+  .header-actions{ display:flex; align-items:center; gap:8px; }
+  .header-btn{
+    display:inline-block; width:auto; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:6px 12px; border-radius:7px; font-size:12px; cursor:pointer;
+    white-space:nowrap;
+  }
+  .header-btn:hover{ border-color:#3c4356; }
+  .header-status{ font-size:11px; color:var(--dim); max-width:220px; }
+
+  #app{ display:flex; flex-direction:column; height:100%; }
+  #main{ flex:1; display:flex; min-height:0; }
+
+  #toolstrip{
+    width:var(--rail-w); flex:none; background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:stretch; padding:10px 6px; gap:4px;
+  }
+  .tool-btn{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    background:transparent; border:1px solid transparent; color:var(--dim);
+    padding:10px 4px 8px; border-radius:9px; font-size:9.5px; cursor:pointer;
+  }
+  .tool-btn svg{ width:20px; height:20px; }
+  .tool-btn:hover{ background:var(--panel-2); color:var(--text); border-color:var(--border); }
+  .tool-btn.active{ background:rgba(108,140,255,0.14); color:var(--accent); border-color:rgba(108,140,255,0.35); }
+
+  #sidebar{
+    width:300px; flex:none; background:var(--panel); border-right:1px solid var(--border);
+    overflow-y:auto; padding:18px 16px 40px;
+  }
+  #sidebar h1{ font-size:16px; margin:0 0 18px; }
+  .tool-panel{ height:100%; }
+  section{ margin-bottom:22px; }
+  section h2{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin:0 0 10px; }
+
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:11.5px; color:var(--dim); margin-bottom:4px; }
+  select, input[type=number], input[type=text]{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:7px 8px; font-size:13px;
+  }
+  input[type=range]{ width:100%; accent-color:var(--accent); }
+  .val{ float:right; color:var(--dim); }
+
+  .filebtn, button{
+    display:block; width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 10px; border-radius:7px; font-size:13px; cursor:pointer; text-align:center;
+  }
+  .filebtn:hover, button:hover{ border-color:#3c4356; }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button:disabled{ opacity:.4; cursor:default; }
+  input[type=file]{ display:none; }
+
+  .row2{ display:flex; gap:8px; }
+  .row2 > *, .row2 .field{ flex:1; }
+
+  .status{ font-size:11.5px; color:var(--dim); margin-top:8px; min-height:14px; }
+  .hint{ font-size:11px; color:var(--dim); margin:6px 0 10px; }
+
+  .presetSaveRow{ display:flex; gap:6px; margin-bottom:10px; }
+  .presetSaveRow input[type=text]{ flex:1; }
+  .presetSaveRow button{ width:auto; padding:9px 12px; }
+  .presetLoadRow{ display:flex; gap:6px; }
+  .presetLoadRow select{ flex:1; }
+  .presetLoadRow button{ width:auto; padding:9px 10px; }
+  .presetLoadRow button.danger:hover{ background:#4a2530; border-color:#7a3a48; color:#ff9aa8; }
+
+  .progressBar{ height:6px; background:var(--panel-2); border-radius:3px; overflow:hidden; margin-top:8px; }
+  .progressBar > div{ height:100%; background:var(--accent); width:0%; transition:width .15s; }
+  .batchLog{
+    max-height:110px; overflow-y:auto; font-size:11px; color:var(--dim);
+    margin-top:8px; border:1px solid var(--border); border-radius:6px; padding:6px 8px;
+    display:none;
+  }
+  .batchLog div{ padding:1px 0; }
+
+  #stageWrap{
+    flex:1; display:flex; align-items:center; justify-content:center; padding:24px; position:relative;
+    overflow:auto; background:
+      linear-gradient(45deg, #1a1c22 25%, transparent 25%),
+      linear-gradient(-45deg, #1a1c22 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1a1c22 75%),
+      linear-gradient(-45deg, transparent 75%, #1a1c22 75%);
+    background-size:24px 24px; background-position:0 0,0 12px,12px -12px,-12px 0;
+  }
+  .tool-stage{ display:contents; }
+  .tool-stage[hidden]{ display:none; }
+  .stage-placeholder{ color:var(--dim); text-align:center; }
+  .tool-stage canvas{ max-width:100%; max-height:100%; box-shadow:0 20px 60px rgba(0,0,0,0.5); background:#fff; touch-action:none; }
+
+  /* ---- tool-specific additions ---- */
+
+  .ratioGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px; }
+  .ratioGrid button{ padding:7px 4px; font-size:12px; }
+  .ratioGrid button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .lockRow{ display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .lockRow input{ width:auto; }
+  .lockRow label{ margin:0; color:var(--dim); font-size:11.5px; }
+
+
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .toggle-row span{ font-size:12.5px; }
+  .switch{ position:relative; width:38px; height:22px; flex:none; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider-toggle{
+    position:absolute; inset:0; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:22px; cursor:pointer; transition:.15s;
+  }
+  .slider-toggle:before{
+    content:""; position:absolute; width:16px; height:16px; left:2px; top:2px;
+    background:var(--dim); border-radius:50%; transition:.15s;
+  }
+  input:checked + .slider-toggle{ background:var(--accent); border-color:var(--accent); }
+  input:checked + .slider-toggle:before{ transform:translateX(16px); background:#fff; }
+  input[type=color]{
+    width:100%; height:32px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:6px; padding:2px; cursor:pointer;
+  }
+
+
+  .swatches{ display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
+  .swatches div{ width:16px; height:16px; border-radius:3px; border:1px solid rgba(255,255,255,0.15); }
+  .toggleRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .toggleRow label{ font-size:12.5px; color:var(--text); margin:0; }
+  .toggleRow input[type=checkbox]{ width:auto; accent-color:var(--accent); }
+  .tool-stage[data-tool="quantizer"] canvas{ image-rendering:pixelated; }
+
+
+  .chipRow{ display:flex; gap:6px; }
+  .chipRow button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+
+  .modeTabs{ display:flex; gap:6px; margin-bottom:14px; }
+  .modeTabs button{ flex:1; }
+  .modeTabs button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .tool-stage[data-tool="tilt-shift"] canvas{ cursor:grab; }
+  .tool-stage[data-tool="tilt-shift"] canvas.dragging{ cursor:grabbing; }
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <div class="brand-mark">&#10022;</div>
+      <div class="brand-name">Imagine</div>
+    </div>
+    <div class="divider"></div>
+    <div class="active-tool-label" id="activeToolLabel">Image Editor</div>
+    <div class="header-spacer"></div>
+    <div class="header-actions">
+      <button class="header-btn" id="btnExportPresets" title="Export every tool's saved presets to one JSON file">Export Presets</button>
+      <label class="header-btn filebtn" for="importPresetsInput" title="Import presets from a previously exported JSON file">Import Presets</label>
+      <input type="file" id="importPresetsInput" accept="application/json,.json">
+      <div class="header-status" id="presetIOStatus"></div>
+    </div>
+  </header>
+
+  <div id="main">
+    <nav id="toolstrip">
+      <button class="tool-btn active" data-tool="image-editor" title="Image Editor">
+        <svg viewBox="0 0 24 24"><path d="M4 16.5V19a1 1 0 0 0 1 1h2.5M4 7.5V5a1 1 0 0 1 1-1h2.5M16.5 4H19a1 1 0 0 1 1 1v2.5M16.5 20H19a1 1 0 0 1 1-1v-2.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span>Editor</span>
+      </button>
+      <button class="tool-btn" data-tool="collage-maker" title="Collage Maker">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.4" fill="currentColor" opacity=".9"/><rect x="13" y="3" width="8" height="5" rx="1.4" fill="currentColor" opacity=".55"/><rect x="13" y="10" width="8" height="4" rx="1.4" fill="currentColor" opacity=".7"/><rect x="3" y="13" width="9" height="8" rx="1.4" fill="currentColor" opacity=".7"/><rect x="13" y="16" width="8" height="5" rx="1.4" fill="currentColor" opacity=".55"/></svg>
+        <span>Collage</span>
+      </button>
+      <button class="tool-btn" data-tool="quantizer" title="Quantizer">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.6" fill="currentColor"/><circle cx="14.5" cy="5.5" r="2.6" fill="currentColor" opacity=".8"/><circle cx="18.5" cy="12" r="2.6" fill="currentColor" opacity=".6"/><circle cx="8" cy="16" r="2.6" fill="currentColor" opacity=".7"/><circle cx="15" cy="18" r="2.6" fill="currentColor" opacity=".45"/></svg>
+        <span>Quantizer</span>
+      </button>
+      <button class="tool-btn" data-tool="image-blur" title="Image Blur">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".35"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".65"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>
+        <span>Blur</span>
+      </button>
+      <button class="tool-btn" data-tool="tilt-shift" title="Tilt-Shift">
+        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".3"/><rect x="2" y="9.5" width="20" height="5" fill="currentColor" opacity=".18"/><line x1="2" y1="9.5" x2="22" y2="9.5" stroke="currentColor" stroke-width="1.4"/><line x1="2" y1="14.5" x2="22" y2="14.5" stroke="currentColor" stroke-width="1.4"/></svg>
+        <span>Tilt-Shift</span>
+      </button>
+    </nav>
+
+    <div id="sidebar">
+    <div class="tool-panel" data-tool="image-editor">
+      <h1>Image Editor</h1>
+
+    <section>
+      <label class="filebtn" for="ie-fileInput">Upload Photo…</label>
+      <input type="file" id="ie-fileInput" accept="image/*">
+      <div class="status" id="ie-loadStatus"></div>
+    </section>
+
+    <section>
+      <h2>Rotate</h2>
+      <div class="row2" style="margin-bottom:10px;">
+        <button id="ie-rotL">⟲ 90°</button>
+        <button id="ie-rotR">⟳ 90°</button>
+      </div>
+      <div class="field">
+        <label>Fine Angle <span class="val" id="ie-fineAngleVal">0°</span></label>
+        <input type="range" id="ie-fineAngle" min="-45" max="45" value="0" step="0.1">
+      </div>
+    </section>
+
+    <section>
+      <h2>Crop / Aspect Ratio</h2>
+      <div class="ratioGrid">
+        <button data-ratio="free" class="active">Free</button>
+        <button data-ratio="original">Original</button>
+        <button data-ratio="1:1">1:1</button>
+        <button data-ratio="4:3">4:3</button>
+        <button data-ratio="3:4">3:4</button>
+        <button data-ratio="16:9">16:9</button>
+        <button data-ratio="9:16">9:16</button>
+        <button data-ratio="3:2">3:2</button>
+      </div>
+      <div class="hint">Drag inside to move the crop. Drag a corner to resize.</div>
+    </section>
+
+    <section>
+      <h2>Output Size</h2>
+      <div class="row2">
+        <div class="field"><label>Width (px)</label><input type="number" id="ie-outW" min="1" max="10000"></div>
+        <div class="field"><label>Height (px)</label><input type="number" id="ie-outH" min="1" max="10000"></div>
+      </div>
+      <div class="lockRow">
+        <input type="checkbox" id="ie-lockAspect" checked>
+        <label for="ie-lockAspect">Keep proportional to crop</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Colour</h2>
+      <div class="field">
+        <label>Hue <span class="val" id="ie-hueVal">0°</span></label>
+        <input type="range" id="ie-hue" min="-180" max="180" value="0">
+      </div>
+      <div class="field">
+        <label>Brightness <span class="val" id="ie-brightnessVal">0</span></label>
+        <input type="range" id="ie-brightness" min="-100" max="100" value="0">
+      </div>
+      <div class="field">
+        <label>Saturation <span class="val" id="ie-saturationVal">100%</span></label>
+        <input type="range" id="ie-saturation" min="0" max="200" value="100">
+      </div>
+      <div class="field">
+        <label>Contrast <span class="val" id="ie-contrastVal">0</span></label>
+        <input type="range" id="ie-contrast" min="-100" max="100" value="0">
+      </div>
+    </section>
+
+    <section>
+      <h2>Presets</h2>
+      <div class="presetSaveRow">
+        <input type="text" id="ie-presetName" placeholder="Preset name">
+        <button id="ie-btnSavePreset">Save</button>
+      </div>
+      <div class="presetLoadRow">
+        <select id="ie-presetSelect"><option value="">No presets saved</option></select>
+        <button id="ie-btnLoadPreset">Load</button>
+        <button id="ie-btnDeletePreset" class="danger">✕</button>
+      </div>
+      <div class="hint">Saves rotation, aspect ratio, output width and all colour settings under a name for reuse — including in batch processing below.</div>
+    </section>
+
+    <section>
+      <h2>Batch Process Folder</h2>
+      <label class="filebtn" for="ie-batchFolderInput">Select Folder…</label>
+      <input type="file" id="ie-batchFolderInput" webkitdirectory directory multiple>
+      <div class="status" id="ie-batchSourceStatus">No folder selected</div>
+
+      <div class="field" style="margin-top:10px;">
+        <label>Preset to Apply</label>
+        <select id="ie-batchPresetSelect"><option value="">No presets saved</option></select>
+      </div>
+
+      <div class="row2">
+        <button class="primary" id="ie-btnStartBatch" disabled>Start Batch</button>
+        <button id="ie-btnStopBatch" disabled>Stop</button>
+      </div>
+      <div class="progressBar"><div id="ie-batchProgressBar"></div></div>
+      <div class="status" id="ie-batchStatus"></div>
+      <div class="batchLog" id="ie-batchLog"></div>
+      <div class="hint">Each image downloads automatically as soon as it's processed. Browsers sometimes prompt to allow multiple downloads from a page the first time — allow it to let the batch continue. Crop position is always auto-centred for the chosen aspect ratio (a manual crop from one photo can't sensibly apply to another).</div>
+    </section>
+
+    <section>
+      <button class="primary" id="ie-btnExport" disabled>Export as PNG</button>
+      <div class="status" id="ie-exportStatus"></div>
+    </section>
+    </div>
+
+    <div class="tool-panel" data-tool="collage-maker" hidden>
+      <h1>Collage Maker</h1>
+
+    <section>
+      <h2>Source</h2>
+      <label class="filebtn" for="cm-folderInput">Select Folder…</label>
+      <input type="file" id="cm-folderInput" webkitdirectory directory multiple>
+      <div class="status" id="cm-sourceStatus">No folder selected</div>
+    </section>
+
+    <section>
+      <h2>Output Size</h2>
+      <div class="row2">
+        <div class="field"><label>Width (px)</label><input type="number" id="cm-outW" value="1600" min="100" max="8000"></div>
+        <div class="field"><label>Height (px)</label><input type="number" id="cm-outH" value="1200" min="100" max="8000"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Style</h2>
+      <div class="field">
+        <label>Gap Between Images <span class="val" id="cm-gapVal">8px</span></label>
+        <input type="range" id="cm-gap" min="0" max="60" value="8">
+      </div>
+
+      <div class="toggle-row">
+        <span>Border</span>
+        <label class="switch"><input type="checkbox" id="cm-borderOn"><span class="slider-toggle"></span></label>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Colour</label><input type="color" id="cm-borderColor" value="#ffffff"></div>
+        <div class="field"><label>Width (px)</label><input type="number" id="cm-borderWidth" value="4" min="1" max="60"></div>
+      </div>
+
+      <div class="toggle-row">
+        <span>Random Rotation</span>
+        <label class="switch"><input type="checkbox" id="cm-rotationOn"><span class="slider-toggle"></span></label>
+      </div>
+      <div class="field">
+        <label>Max Angle <span class="val" id="cm-angleVal">15°</span></label>
+        <input type="range" id="cm-maxAngle" min="0" max="45" value="15">
+      </div>
+    </section>
+
+    <section>
+      <h2>Actions</h2>
+      <div class="field"><button id="cm-btnShuffle" disabled>Shuffle Layout</button></div>
+      <div class="field"><button class="primary" id="cm-btnExport" disabled>Export as PNG</button></div>
+      <div class="status" id="cm-renderStatus"></div>
+    </section>
+    </div>
+
+    <div class="tool-panel" data-tool="quantizer" hidden>
+      <h1>Quantizer</h1>
+
+    <section>
+      <label class="filebtn" for="qz-fileInput">Upload Photo…</label>
+      <input type="file" id="qz-fileInput" accept="image/*">
+      <div class="status" id="qz-loadStatus"></div>
+    </section>
+
+    <section>
+      <h2>Palette</h2>
+      <div class="field">
+        <select id="qz-paletteSelect">
+          <option value="bw">B&amp;W (1-bit)</option>
+          <option value="c64">Commodore 64 (16)</option>
+          <option value="cga">CGA (16)</option>
+          <option value="ega">EGA (64)</option>
+          <option value="vga">VGA (256)</option>
+          <option value="ehb">Amiga EHB (64, image-derived)</option>
+          <option value="ham">Amiga HAM (image-derived)</option>
+          <option value="custom" selected>Custom — Best Fit</option>
+        </select>
+      </div>
+      <div class="field" id="qz-customColorsField">
+        <label>Max Colours <span class="val" id="qz-customColorsVal">32</span></label>
+        <input type="range" id="qz-customColors" min="2" max="256" value="32">
+      </div>
+      <div class="swatches" id="qz-swatches"></div>
+    </section>
+
+    <section id="qz-resSection">
+      <h2>Crop &amp; Resize</h2>
+      <div class="field">
+        <label>Resolution</label>
+        <select id="qz-resSelect"></select>
+      </div>
+      <div class="hint" id="qz-resHint"></div>
+    </section>
+
+    <section id="qz-ditherSection">
+      <h2>Dithering</h2>
+      <div class="field">
+        <select id="qz-ditherSelect">
+          <option value="none">None</option>
+          <option value="checkerboard">Checkerboard</option>
+          <option value="hline">Horizontal Line</option>
+          <option value="vline">Vertical Line</option>
+          <option value="diagonal">Diagonal Line</option>
+          <option value="diffusion">Error Diffusion (Floyd–Steinberg)</option>
+          <option value="bayer">Bayer (8×8)</option>
+        </select>
+      </div>
+      <div class="hint" id="qz-ditherHint"></div>
+    </section>
+
+    <section>
+      <h2>Presets</h2>
+      <div class="presetSaveRow">
+        <input type="text" id="qz-presetName" placeholder="Preset name">
+        <button id="qz-btnSavePreset">Save</button>
+      </div>
+      <div class="presetLoadRow">
+        <select id="qz-presetSelect"><option value="">No presets saved</option></select>
+        <button id="qz-btnLoadPreset">Load</button>
+        <button id="qz-btnDeletePreset" class="danger">✕</button>
+      </div>
+      <div class="hint">Saves palette, dithering, and resolution settings under a name for reuse — including in batch processing below.</div>
+    </section>
+
+    <section>
+      <h2>Batch Process Folder</h2>
+      <label class="filebtn" for="qz-batchFolderInput">Select Folder…</label>
+      <input type="file" id="qz-batchFolderInput" webkitdirectory directory multiple>
+      <div class="status" id="qz-batchSourceStatus">No folder selected</div>
+
+      <div class="field" style="margin-top:10px;">
+        <label>Preset to Apply</label>
+        <select id="qz-batchPresetSelect"><option value="">No presets saved</option></select>
+      </div>
+
+      <div class="row2">
+        <button class="primary" id="qz-btnStartBatch" disabled>Start Batch</button>
+        <button id="qz-btnStopBatch" disabled>Stop</button>
+      </div>
+      <div class="progressBar"><div id="qz-batchProgressBar"></div></div>
+      <div class="status" id="qz-batchStatus"></div>
+      <div class="batchLog" id="qz-batchLog"></div>
+      <div class="hint">Each image downloads automatically as soon as it's processed. Browsers sometimes prompt to allow multiple downloads the first time — allow it to let the batch continue.</div>
+    </section>
+
+    <section>
+      <button class="primary" id="qz-btnExport" disabled>Export as PNG</button>
+      <div class="status" id="qz-exportStatus"></div>
+    </section>
+    </div>
+
+    <div class="tool-panel" data-tool="image-blur" hidden>
+      <h1>Image Blur</h1>
+
+    <section>
+      <label class="filebtn" for="ib-fileInput">Upload Photo…</label>
+      <input type="file" id="ib-fileInput" accept="image/*">
+      <div class="status" id="ib-loadStatus"></div>
+    </section>
+
+    <section>
+      <h2>Blur Style</h2>
+      <div class="chipRow">
+        <button class="active" data-type="GAUSSIAN">Gaussian</button>
+        <button data-type="BOX">Box</button>
+        <button data-type="HEXAGON">Hexagon</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Strength</h2>
+      <div class="field">
+        <label>Amount <span class="val" id="ib-strengthVal">50%</span></label>
+        <input type="range" id="ib-strength" min="0" max="100" value="50">
+      </div>
+    </section>
+
+    <section>
+      <h2>Presets</h2>
+      <div class="presetSaveRow">
+        <input type="text" id="ib-presetName" placeholder="Preset name">
+        <button id="ib-btnSavePreset">Save</button>
+      </div>
+      <div class="presetLoadRow">
+        <select id="ib-presetSelect"><option value="">No presets saved</option></select>
+        <button id="ib-btnLoadPreset">Load</button>
+        <button id="ib-btnDeletePreset" class="danger">✕</button>
+      </div>
+      <div class="hint">Saves blur style and strength under a name for reuse — including in batch processing below.</div>
+    </section>
+
+    <section>
+      <h2>Batch Process Folder</h2>
+      <label class="filebtn" for="ib-batchFolderInput">Select Folder…</label>
+      <input type="file" id="ib-batchFolderInput" webkitdirectory directory multiple>
+      <div class="status" id="ib-batchSourceStatus">No folder selected</div>
+
+      <div class="field" style="margin-top:10px;">
+        <label>Preset to Apply</label>
+        <select id="ib-batchPresetSelect"><option value="">No presets saved</option></select>
+      </div>
+
+      <div class="row2">
+        <button class="primary" id="ib-btnStartBatch" disabled>Start Batch</button>
+        <button id="ib-btnStopBatch" disabled>Stop</button>
+      </div>
+      <div class="progressBar"><div id="ib-batchProgressBar"></div></div>
+      <div class="status" id="ib-batchStatus"></div>
+      <div class="batchLog" id="ib-batchLog"></div>
+      <div class="hint">Each image downloads automatically as soon as it's processed. Browsers sometimes prompt to allow multiple downloads the first time — allow it to let the batch continue.</div>
+    </section>
+
+    <section>
+      <button class="primary" id="ib-btnSave" disabled>Save Blurred Photo</button>
+      <div class="status" id="ib-exportStatus"></div>
+    </section>
+    </div>
+
+    <div class="tool-panel" data-tool="tilt-shift" hidden>
+      <h1>Tilt-Shift</h1>
+
+    <section>
+      <label class="filebtn" for="ts-fileInput">Upload Photo…</label>
+      <input type="file" id="ts-fileInput" accept="image/*">
+      <div class="status" id="ts-loadStatus"></div>
+    </section>
+
+    <section>
+      <h2>Focus Region</h2>
+      <div class="modeTabs">
+        <button id="ts-tabLinear" class="active">Linear</button>
+        <button id="ts-tabElliptical">Elliptical</button>
+      </div>
+      <div class="hint" id="ts-dragHint">Click or drag on the image to move the focus line. Drag the small handle to rotate it.</div>
+
+      <div id="ts-linearControls">
+        <div class="field">
+          <label>Angle <span class="val" id="ts-angleVal">0°</span></label>
+          <input type="range" id="ts-angle" min="0" max="180" value="0">
+        </div>
+        <div class="field">
+          <label>Focus Width <span class="val" id="ts-focusWidthVal">15%</span></label>
+          <input type="range" id="ts-focusWidth" min="0" max="60" value="15">
+        </div>
+      </div>
+
+      <div id="ts-ellipticalControls" style="display:none;">
+        <div class="field">
+          <label>Aperture Size <span class="val" id="ts-apertureVal">30%</span></label>
+          <input type="range" id="ts-aperture" min="5" max="80" value="30">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Transition <span class="val" id="ts-transitionVal">20%</span></label>
+        <input type="range" id="ts-transition" min="1" max="60" value="20">
+      </div>
+    </section>
+
+    <section>
+      <h2>Blur</h2>
+      <div class="field">
+        <label>Amount <span class="val" id="ts-blurVal">50%</span></label>
+        <input type="range" id="ts-blurAmount" min="0" max="100" value="50">
+      </div>
+    </section>
+
+    <section>
+      <h2>Colour (miniature look)</h2>
+      <div class="field">
+        <label>Brightness <span class="val" id="ts-brightnessVal">0</span></label>
+        <input type="range" id="ts-brightness" min="-100" max="100" value="0">
+      </div>
+      <div class="field">
+        <label>Contrast <span class="val" id="ts-contrastVal">15</span></label>
+        <input type="range" id="ts-contrast" min="-100" max="100" value="15">
+      </div>
+      <div class="field">
+        <label>Saturation <span class="val" id="ts-saturationVal">130%</span></label>
+        <input type="range" id="ts-saturation" min="0" max="200" value="130">
+      </div>
+    </section>
+
+    <section>
+      <button class="primary" id="ts-btnExport" disabled>Export as PNG</button>
+      <div class="status" id="ts-exportStatus"></div>
+    </section>
+    </div>
+    </div>
+
+    <div id="stageWrap">
+    <div class="tool-stage" data-tool="image-editor">
+    <div id="ie-placeholder" class="stage-placeholder">Upload a photo to get started</div>
+    <canvas id="ie-previewCanvas" style="display:none;"></canvas>
+    </div>
+
+    <div class="tool-stage" data-tool="collage-maker" hidden>
+    <canvas id="cm-canvas" width="1600" height="1200"></canvas>
+    </div>
+
+    <div class="tool-stage" data-tool="quantizer" hidden>
+    <div id="qz-placeholder" class="stage-placeholder">Upload a photo to get started</div>
+    <canvas id="qz-previewCanvas" style="display:none;"></canvas>
+    </div>
+
+    <div class="tool-stage" data-tool="image-blur" hidden>
+    <div id="ib-placeholder" class="stage-placeholder">Upload a photo to get started</div>
+    <canvas id="ib-previewCanvas" style="display:none;"></canvas>
+    </div>
+
+    <div class="tool-stage" data-tool="tilt-shift" hidden>
+    <div id="ts-placeholder" class="stage-placeholder">Upload a photo to get started</div>
+    <canvas id="ts-previewCanvas" style="display:none;"></canvas>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const TOOL_LABELS = {
+    "image-editor": "Image Editor",
+    "collage-maker": "Collage Maker",
+    "quantizer": "Quantizer",
+    "image-blur": "Image Blur",
+    "tilt-shift": "Tilt-Shift"
+  };
+  const toolButtons = Array.from(document.querySelectorAll(".tool-btn"));
+  const activeLabel = document.getElementById("activeToolLabel");
+
+  function selectTool(tool) {
+    toolButtons.forEach(b => b.classList.toggle("active", b.dataset.tool === tool));
+    document.querySelectorAll(".tool-panel").forEach(p => { p.hidden = p.dataset.tool !== tool; });
+    document.querySelectorAll(".tool-stage").forEach(s => { s.hidden = s.dataset.tool !== tool; });
+    activeLabel.textContent = TOOL_LABELS[tool] || tool;
+  }
+
+  toolButtons.forEach(btn => btn.addEventListener("click", () => selectTool(btn.dataset.tool)));
+  selectTool("image-editor");
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+  // Every tool with presets keeps its own localStorage key; this bundles
+  // all of them into one JSON file for backup/transfer, and reverses it
+  // on import. Tools without presets (Collage Maker, Tilt-Shift) simply
+  // aren't in this map.
+  const PRESET_KEYS = {
+    "image-editor": "imageEditorPresets_v1",
+    "quantizer": "quantizerPresets_v1",
+    "image-blur": "imageBlurPresets_v1"
+  };
+
+  const btnExport = document.getElementById("btnExportPresets");
+  const importInput = document.getElementById("importPresetsInput");
+  const status = document.getElementById("presetIOStatus");
+
+  function readPresets(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
+  }
+
+  btnExport.addEventListener("click", () => {
+    const data = {
+      app: "Imagine",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      presets: {}
+    };
+    let total = 0;
+    for (const [tool, key] of Object.entries(PRESET_KEYS)) {
+      const list = readPresets(key);
+      data.presets[tool] = list;
+      total += list.length;
+    }
+    if (total === 0) {
+      status.textContent = "No presets saved yet.";
+      return;
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `imagine-presets-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    status.textContent = `Exported ${total} preset${total === 1 ? "" : "s"}.`;
+  });
+
+  // Imported presets are merged into each tool's existing list by name --
+  // a preset from the file replaces one with the same name, anything else
+  // already saved on this device is left alone.
+  function mergeByName(existing, incoming) {
+    const map = new Map(existing.map(p => [p.name, p]));
+    incoming.forEach(p => { if (p && typeof p.name === "string") map.set(p.name, p); });
+    return Array.from(map.values());
+  }
+
+  importInput.addEventListener("change", () => {
+    const file = importInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (e) {
+        status.textContent = "That file isn't valid JSON.";
+        return;
+      }
+      if (!data || typeof data.presets !== "object") {
+        status.textContent = "That doesn't look like an Imagine presets file.";
+        return;
+      }
+
+      let importedCount = 0;
+      let toolsTouched = 0;
+      for (const [tool, key] of Object.entries(PRESET_KEYS)) {
+        const incoming = Array.isArray(data.presets[tool]) ? data.presets[tool] : [];
+        if (incoming.length === 0) continue;
+        const merged = mergeByName(readPresets(key), incoming);
+        localStorage.setItem(key, JSON.stringify(merged));
+        importedCount += incoming.length;
+        toolsTouched++;
+        // Refresh that tool's own preset dropdowns immediately if it's
+        // already loaded, rather than requiring a page reload.
+        if (window.ImagineTools && window.ImagineTools[tool] && window.ImagineTools[tool].refreshPresets) {
+          window.ImagineTools[tool].refreshPresets();
+        }
+      }
+
+      status.textContent = importedCount > 0
+        ? `Imported ${importedCount} preset${importedCount === 1 ? "" : "s"} across ${toolsTouched} tool${toolsTouched === 1 ? "" : "s"}.`
+        : "No presets found in that file.";
+      importInput.value = "";
+    };
+    reader.onerror = () => { status.textContent = "Couldn't read that file."; };
+    reader.readAsText(file);
+  });
+})();
+</script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================ COLOUR ADJUST ============================================================ */
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      default: h = (r - g) / d + 4;
+    }
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hue2rgb(p, q, t) {
+  if (t < 0) t += 1;
+  if (t > 1) t -= 1;
+  if (t < 1/6) return p + (q - p) * 6 * t;
+  if (t < 1/2) return q;
+  if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+  return p;
+}
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return [r * 255, g * 255, b * 255];
+}
+function contrastFactor(c255) { return (259 * (c255 + 255)) / (255 * (259 - c255)); }
+
+function applyColour(imageData, hueDeg, brightness, saturationPct, contrast) {
+  const out = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
+  const d = out.data;
+  const hueShift = hueDeg / 360;
+  const satF = saturationPct / 100;
+  const cf = contrastFactor(contrast * 2.55);
+  const bAdd = brightness * 2.55;
+  const noHueSat = hueDeg === 0 && saturationPct === 100;
+
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i], g = d[i+1], b = d[i+2];
+
+    if (!noHueSat) {
+      let [h, s, l] = rgbToHsl(r, g, b);
+      h = (h + hueShift + 1) % 1;
+      s = Math.min(1, Math.max(0, s * satF));
+      [r, g, b] = hslToRgb(h, s, l);
+    }
+
+    r += bAdd; g += bAdd; b += bAdd;
+    r = cf * (r - 128) + 128; g = cf * (g - 128) + 128; b = cf * (b - 128) + 128;
+
+    d[i] = r; d[i+1] = g; d[i+2] = b;
+  }
+  return out;
+}
+
+/* ============================================================ HIGH-QUALITY RESAMPLE ============================================================
+   Single-step canvas resize aliases badly on large downscales. Stepping
+   down by at most 50% per pass (a standard mipmap-style technique) keeps
+   each individual resize ratio small enough for the browser's own
+   high-quality smoothing to average properly, avoiding moire/aliasing.
+   Upscaling doesn't have this problem, so it skips straight to one
+   high-quality draw. */
+function highQualityResize(sourceCanvas, targetW, targetH) {
+  let cur = sourceCanvas;
+  let curW = cur.width, curH = cur.height;
+
+  while (curW > targetW * 2 && curH > targetH * 2) {
+    const nw = Math.max(targetW, Math.round(curW / 2));
+    const nh = Math.max(targetH, Math.round(curH / 2));
+    const step = document.createElement("canvas");
+    step.width = nw; step.height = nh;
+    const sctx = step.getContext("2d");
+    sctx.imageSmoothingEnabled = true;
+    sctx.imageSmoothingQuality = "high";
+    sctx.drawImage(cur, 0, 0, nw, nh);
+    cur = step; curW = nw; curH = nh;
+  }
+
+  const final = document.createElement("canvas");
+  final.width = targetW; final.height = targetH;
+  const fctx = final.getContext("2d");
+  fctx.imageSmoothingEnabled = true;
+  fctx.imageSmoothingQuality = "high";
+  fctx.drawImage(cur, 0, 0, targetW, targetH);
+  return final;
+}
+
+/* ============================================================ STATE ============================================================ */
+
+let originalImg = null;
+let totalAngleDeg = 0;   // quarterTurns*90 + fineAngle
+let quarterTurns = 0;
+let fineAngle = 0;
+
+// crop rect stored as fractions (0..1) of the ROTATED canvas bounds, so it
+// scales cleanly between the downsampled preview and full-res export.
+let crop = { x: 0.1, y: 0.1, w: 0.8, h: 0.8 };
+let ratioMode = "free"; // 'free' | 'original' | 'W:H' string
+
+let colour = { hue: 0, brightness: 0, saturation: 100, contrast: 0 };
+
+let rotatedPreviewRaw = null; // ImageData: rotated, un-coloured, preview resolution
+const PREVIEW_MAX = 900;
+
+/* ============================================================ DOM ============================================================ */
+
+const els = {};
+["fileInput","loadStatus","rotL","rotR","fineAngle","fineAngleVal",
+ "outW","outH","lockAspect","hue","hueVal","brightness","brightnessVal",
+ "saturation","saturationVal","contrast","contrastVal",
+ "btnExport","exportStatus","previewCanvas","placeholder",
+ "presetName","btnSavePreset","presetSelect","btnLoadPreset","btnDeletePreset",
+ "batchFolderInput","batchSourceStatus","batchPresetSelect","btnStartBatch","btnStopBatch",
+ "batchProgressBar","batchStatus","batchLog"
+].forEach(id => els[id] = document.getElementById("ie-" + id));
+const ratioButtons = Array.from(document.querySelectorAll('.tool-panel[data-tool="image-editor"] [data-ratio]'));
+const ctx = els.previewCanvas.getContext("2d");
+
+/* ============================================================ ROTATION ============================================================ */
+
+function rotatedBounds(w, h, angleRad) {
+  const c = Math.abs(Math.cos(angleRad)), s = Math.abs(Math.sin(angleRad));
+  return { w: Math.round(w * c + h * s), h: Math.round(w * s + h * c) };
+}
+
+function drawRotated(sourceImgOrCanvas, srcW, srcH, angleDeg, quality) {
+  const angleRad = angleDeg * Math.PI / 180;
+  const bounds = rotatedBounds(srcW, srcH, angleRad);
+  const canvas = document.createElement("canvas");
+  canvas.width = bounds.w; canvas.height = bounds.h;
+  const c = canvas.getContext("2d");
+  if (quality) { c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high"; }
+  c.translate(bounds.w / 2, bounds.h / 2);
+  c.rotate(angleRad);
+  c.drawImage(sourceImgOrCanvas, -srcW / 2, -srcH / 2, srcW, srcH);
+  return canvas;
+}
+
+/* ============================================================ PIPELINE (preview) ============================================================ */
+
+function recomputeRotation() {
+  if (!originalImg) return;
+  totalAngleDeg = quarterTurns * 90 + fineAngle;
+  const scale = Math.min(1, PREVIEW_MAX / Math.max(originalImg.naturalWidth, originalImg.naturalHeight));
+  const srcW = Math.round(originalImg.naturalWidth * scale);
+  const srcH = Math.round(originalImg.naturalHeight * scale);
+
+  const scaledSrc = document.createElement("canvas");
+  scaledSrc.width = srcW; scaledSrc.height = srcH;
+  const sctx = scaledSrc.getContext("2d");
+  sctx.imageSmoothingEnabled = true; sctx.imageSmoothingQuality = "high";
+  sctx.drawImage(originalImg, 0, 0, srcW, srcH);
+
+  const rotatedCanvas = drawRotated(scaledSrc, srcW, srcH, totalAngleDeg, true);
+  rotatedPreviewRaw = rotatedCanvas.getContext("2d").getImageData(0, 0, rotatedCanvas.width, rotatedCanvas.height);
+
+  clampCropToBounds();
+  redraw();
+  syncOutputSizeFromCrop();
+}
+
+function redraw() {
+  if (!rotatedPreviewRaw) return;
+  const W = rotatedPreviewRaw.width, H = rotatedPreviewRaw.height;
+  els.previewCanvas.width = W;
+  els.previewCanvas.height = H;
+
+  const coloured = applyColour(rotatedPreviewRaw, colour.hue, colour.brightness, colour.saturation, colour.contrast);
+  ctx.putImageData(coloured, 0, 0);
+  drawCropOverlay(W, H);
+}
+
+function drawCropOverlay(W, H) {
+  const cx = crop.x * W, cy = crop.y * H, cw = crop.w * W, ch = crop.h * H;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.rect(cx, cy, cw, ch);
+  ctx.fill("evenodd");
+
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(cx, cy, cw, ch);
+
+  // rule-of-thirds guides
+  ctx.strokeStyle = "rgba(255,255,255,0.35)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 2; i++) {
+    ctx.beginPath(); ctx.moveTo(cx + cw*i/3, cy); ctx.lineTo(cx + cw*i/3, cy+ch); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy + ch*i/3); ctx.lineTo(cx+cw, cy + ch*i/3); ctx.stroke();
+  }
+
+  // corner handles
+  ctx.fillStyle = "#6c8cff";
+  const handles = cornerPoints(cx, cy, cw, ch);
+  handles.forEach(p => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function cornerPoints(x, y, w, h) {
+  return [
+    { name: "tl", x: x,     y: y     },
+    { name: "tr", x: x + w, y: y     },
+    { name: "bl", x: x,     y: y + h },
+    { name: "br", x: x + w, y: y + h }
+  ];
+}
+
+/* ============================================================ ASPECT RATIO / CROP RESET ============================================================ */
+
+function ratioValueFor(mode, nativeAspect) {
+  if (mode === "free") return null;
+  if (mode === "original") return nativeAspect;
+  const [a, b] = mode.split(":").map(Number);
+  return a / b;
+}
+
+/** Centred crop rect (0..1 fractions) for the given rotated-canvas size,
+ *  aspect ratio mode, and the source image's native aspect (used when
+ *  mode === 'original'). Shared by the live editor and batch processing
+ *  so both produce identical, predictable framing. */
+function computeAutoCrop(rotW, rotH, mode, nativeAspect, sizeFraction) {
+  const r = ratioValueFor(mode, nativeAspect);
+  let w, h;
+  if (!r) { w = rotW * sizeFraction; h = rotH * sizeFraction; }
+  else if (rotW / rotH > r) { h = rotH * sizeFraction; w = h * r; }
+  else { w = rotW * sizeFraction; h = w / r; }
+  return { x: (rotW - w) / (2 * rotW), y: (rotH - h) / (2 * rotH), w: w / rotW, h: h / rotH };
+}
+
+function ratioValue() {
+  if (!originalImg) return ratioValueFor(ratioMode, 1);
+  return ratioValueFor(ratioMode, originalImg.naturalWidth / originalImg.naturalHeight);
+}
+
+function resetCropForRatio() {
+  if (!rotatedPreviewRaw || !originalImg) return;
+  crop = computeAutoCrop(
+    rotatedPreviewRaw.width, rotatedPreviewRaw.height,
+    ratioMode, originalImg.naturalWidth / originalImg.naturalHeight, 0.85
+  );
+  redraw();
+  syncOutputSizeFromCrop();
+}
+
+function clampCropToBounds() {
+  crop.w = Math.min(1, Math.max(0.02, crop.w));
+  crop.h = Math.min(1, Math.max(0.02, crop.h));
+  crop.x = Math.min(1 - crop.w, Math.max(0, crop.x));
+  crop.y = Math.min(1 - crop.h, Math.max(0, crop.y));
+}
+
+ratioButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    ratioMode = btn.dataset.ratio;
+    ratioButtons.forEach(b => b.classList.toggle("active", b === btn));
+    resetCropForRatio();
+  });
+});
+
+/* ============================================================ CROP DRAG INTERACTION ============================================================ */
+
+let dragMode = null; // 'move' | 'tl' | 'tr' | 'bl' | 'br' | null
+let dragStart = null;
+
+function toCanvasPx(clientX, clientY) {
+  const rect = els.previewCanvas.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) * (els.previewCanvas.width / rect.width),
+    y: (clientY - rect.top) * (els.previewCanvas.height / rect.height)
+  };
+}
+
+els.previewCanvas.addEventListener("pointerdown", (e) => {
+  if (!rotatedPreviewRaw) return;
+  const W = rotatedPreviewRaw.width, H = rotatedPreviewRaw.height;
+  const p = toCanvasPx(e.clientX, e.clientY);
+  const cx = crop.x * W, cy = crop.y * H, cw = crop.w * W, ch = crop.h * H;
+
+  const handles = cornerPoints(cx, cy, cw, ch);
+  const hit = handles.find(h => Math.hypot(p.x - h.x, p.y - h.y) < 16);
+
+  if (hit) {
+    dragMode = hit.name;
+  } else if (p.x >= cx && p.x <= cx+cw && p.y >= cy && p.y <= cy+ch) {
+    dragMode = "move";
+  } else {
+    dragMode = null;
+    return;
+  }
+  dragStart = { p, crop: { ...crop } };
+  els.previewCanvas.setPointerCapture(e.pointerId);
+});
+
+els.previewCanvas.addEventListener("pointermove", (e) => {
+  if (!dragMode || !rotatedPreviewRaw) return;
+  const W = rotatedPreviewRaw.width, H = rotatedPreviewRaw.height;
+  const p = toCanvasPx(e.clientX, e.clientY);
+  const dx = (p.x - dragStart.p.x) / W, dy = (p.y - dragStart.p.y) / H;
+  const s = dragStart.crop;
+  const r = ratioValue();
+
+  if (dragMode === "move") {
+    crop.x = s.x + dx; crop.y = s.y + dy;
+    clampCropToBounds();
+  } else {
+    // resize from the corner opposite the one being dragged (pivot stays fixed)
+    const xIsLeft = dragMode.includes("l"); // moving corner is the left edge for tl/bl
+    const yIsTop = dragMode.includes("t");  // moving corner is the top edge for tl/tr
+
+    const movingStart = { x: xIsLeft ? s.x : s.x + s.w, y: yIsTop ? s.y : s.y + s.h };
+    const pivot = { x: xIsLeft ? s.x + s.w : s.x, y: yIsTop ? s.y + s.h : s.y };
+    const newMovingX = movingStart.x + dx, newMovingY = movingStart.y + dy;
+
+    let w = Math.abs(pivot.x - newMovingX);
+    let h = Math.abs(pivot.y - newMovingY);
+
+    if (r) {
+      const wPx = w * W, hFromWPx = wPx / r;
+      const hPx = h * H, wFromHPx = hPx * r;
+      if (wPx > wFromHPx) { h = hFromWPx / H; } else { w = wFromHPx / W; }
+    }
+    w = Math.max(0.04, w); h = Math.max(0.04, h);
+
+    crop.x = xIsLeft ? pivot.x - w : pivot.x;
+    crop.y = yIsTop ? pivot.y - h : pivot.y;
+    crop.w = w; crop.h = h;
+    clampCropToBounds();
+  }
+  redraw();
+});
+
+function endDrag() {
+  dragMode = null;
+  syncOutputSizeFromCrop();
+}
+els.previewCanvas.addEventListener("pointerup", endDrag);
+els.previewCanvas.addEventListener("pointercancel", endDrag);
+
+/* ============================================================ OUTPUT SIZE ============================================================ */
+
+function syncOutputSizeFromCrop() {
+  if (!originalImg || !rotatedPreviewRaw) return;
+  const fullBounds = rotatedBounds(originalImg.naturalWidth, originalImg.naturalHeight, totalAngleDeg * Math.PI / 180);
+  const w = Math.max(1, Math.round(crop.w * fullBounds.w));
+  const h = Math.max(1, Math.round(crop.h * fullBounds.h));
+  els.outW.value = w;
+  els.outH.value = h;
+}
+
+els.outW.addEventListener("input", () => {
+  if (els.lockAspect.checked && rotatedPreviewRaw) {
+    const ratio = crop.w * rotatedPreviewRaw.width / (crop.h * rotatedPreviewRaw.height);
+    els.outH.value = Math.max(1, Math.round((+els.outW.value) / ratio));
+  }
+});
+els.outH.addEventListener("input", () => {
+  if (els.lockAspect.checked && rotatedPreviewRaw) {
+    const ratio = crop.w * rotatedPreviewRaw.width / (crop.h * rotatedPreviewRaw.height);
+    els.outW.value = Math.max(1, Math.round((+els.outH.value) * ratio));
+  }
+});
+
+/* ============================================================ CONTROLS WIRING ============================================================ */
+
+els.fileInput.addEventListener("change", () => {
+  const file = els.fileInput.files[0];
+  if (!file) return;
+  els.loadStatus.textContent = "Loading…";
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    originalImg = img;
+    quarterTurns = 0; fineAngle = 0;
+    els.fineAngle.value = 0; els.fineAngleVal.textContent = "0°";
+    ratioMode = "free";
+    ratioButtons.forEach(b => b.classList.toggle("active", b.dataset.ratio === "free"));
+    els.placeholder.style.display = "none";
+    els.previewCanvas.style.display = "block";
+    els.btnExport.disabled = false;
+    els.loadStatus.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+    recomputeRotation();
+    resetCropForRatio();
+  };
+  img.onerror = () => { els.loadStatus.textContent = "Couldn't load that file."; };
+  img.src = url;
+});
+
+els.rotL.addEventListener("click", () => { quarterTurns = (quarterTurns - 1 + 4) % 4; recomputeRotation(); resetCropForRatio(); });
+els.rotR.addEventListener("click", () => { quarterTurns = (quarterTurns + 1) % 4; recomputeRotation(); resetCropForRatio(); });
+els.fineAngle.addEventListener("input", () => {
+  fineAngle = +els.fineAngle.value;
+  els.fineAngleVal.textContent = fineAngle + "°";
+  recomputeRotation();
+  resetCropForRatio();
+});
+
+[["hue","hueVal","°"],["brightness","brightnessVal",""],["contrast","contrastVal",""]].forEach(([id,valId,suffix]) => {
+  els[id].addEventListener("input", () => {
+    colour[id] = +els[id].value;
+    els[valId].textContent = els[id].value + suffix;
+    redraw();
+  });
+});
+els.saturation.addEventListener("input", () => {
+  colour.saturation = +els.saturation.value;
+  els.saturationVal.textContent = els.saturation.value + "%";
+  redraw();
+});
+
+/* ============================================================ EXPORT (full resolution) ============================================================ */
+
+/* ============================================================ SHARED FULL-RES PIPELINE ============================================================ */
+
+/** Rotates, crops, colour-adjusts, and resizes a full-resolution image, and
+ *  returns the final canvas. Used by both the single-image Export button
+ *  and batch processing, so both paths are guaranteed to behave the same. */
+function renderFinalCanvas(img, totalAngle, cropRect, colourSettings, outW, outH) {
+  const rotatedFull = drawRotated(img, img.naturalWidth, img.naturalHeight, totalAngle, true);
+
+  const cx = Math.round(cropRect.x * rotatedFull.width);
+  const cy = Math.round(cropRect.y * rotatedFull.height);
+  const cw = Math.max(1, Math.round(cropRect.w * rotatedFull.width));
+  const ch = Math.max(1, Math.round(cropRect.h * rotatedFull.height));
+  const cropped = document.createElement("canvas");
+  cropped.width = cw; cropped.height = ch;
+  cropped.getContext("2d").drawImage(rotatedFull, cx, cy, cw, ch, 0, 0, cw, ch);
+
+  const cctx = cropped.getContext("2d");
+  const raw = cctx.getImageData(0, 0, cw, ch);
+  const adjusted = applyColour(raw, colourSettings.hue, colourSettings.brightness, colourSettings.saturation, colourSettings.contrast);
+  cctx.putImageData(adjusted, 0, 0);
+
+  return highQualityResize(cropped, Math.max(1, outW), Math.max(1, outH));
+}
+
+function downloadCanvasAsPng(canvas, filename) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      resolve();
+    }, "image/png");
+  });
+}
+
+/* ============================================================ EXPORT (single image, full resolution) ============================================================ */
+
+els.btnExport.addEventListener("click", () => {
+  if (!originalImg) return;
+  els.exportStatus.textContent = "Rendering full-resolution image…";
+  els.btnExport.disabled = true;
+
+  setTimeout(async () => {
+    const outW = Math.max(1, parseInt(els.outW.value, 10) || 1);
+    const outH = Math.max(1, parseInt(els.outH.value, 10) || 1);
+    const final = renderFinalCanvas(originalImg, totalAngleDeg, crop, colour, outW, outH);
+    await downloadCanvasAsPng(final, `edited_${Date.now()}.png`);
+    els.exportStatus.textContent = "Saved.";
+    els.btnExport.disabled = false;
+  }, 20);
+});
+
+/* ============================================================ PRESETS (localStorage) ============================================================ */
+
+const PRESETS_KEY = "imageEditorPresets_v1";
+
+function loadPresets() {
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function savePresets(list) {
+  localStorage.setItem(PRESETS_KEY, JSON.stringify(list));
+}
+function getCurrentSettings() {
+  return {
+    quarterTurns, fineAngle, ratioMode,
+    outW: Math.max(1, parseInt(els.outW.value, 10) || 1),
+    colour: { ...colour }
+  };
+}
+function applySettingsToEditor(settings) {
+  quarterTurns = settings.quarterTurns; fineAngle = settings.fineAngle;
+  els.fineAngle.value = fineAngle; els.fineAngleVal.textContent = fineAngle + "°";
+  ratioMode = settings.ratioMode;
+  ratioButtons.forEach(b => b.classList.toggle("active", b.dataset.ratio === ratioMode));
+  colour = { ...settings.colour };
+  els.hue.value = colour.hue; els.hueVal.textContent = colour.hue + "°";
+  els.brightness.value = colour.brightness; els.brightnessVal.textContent = colour.brightness;
+  els.saturation.value = colour.saturation; els.saturationVal.textContent = colour.saturation + "%";
+  els.contrast.value = colour.contrast; els.contrastVal.textContent = colour.contrast;
+  if (originalImg) { recomputeRotation(); resetCropForRatio(); }
+  els.outW.value = settings.outW;
+  els.outW.dispatchEvent(new Event("input"));
+}
+
+function refreshPresetSelects() {
+  const presets = loadPresets();
+  [els.presetSelect, els.batchPresetSelect].forEach(sel => {
+    const prevValue = sel.value;
+    sel.innerHTML = "";
+    if (presets.length === 0) {
+      sel.innerHTML = '<option value="">No presets saved</option>';
+    } else {
+      presets.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.name; opt.textContent = p.name;
+        sel.appendChild(opt);
+      });
+      if (presets.some(p => p.name === prevValue)) sel.value = prevValue;
+    }
+  });
+  els.btnStartBatch.disabled = !(loadPresets().length > 0 && batchFiles.length > 0);
+}
+
+els.btnSavePreset.addEventListener("click", () => {
+  const name = els.presetName.value.trim();
+  if (!name) { els.presetName.focus(); return; }
+  const presets = loadPresets().filter(p => p.name !== name);
+  presets.push({ name, ...getCurrentSettings() });
+  savePresets(presets);
+  els.presetName.value = "";
+  refreshPresetSelects();
+  els.presetSelect.value = name;
+});
+
+els.btnLoadPreset.addEventListener("click", () => {
+  const name = els.presetSelect.value;
+  const preset = loadPresets().find(p => p.name === name);
+  if (preset) applySettingsToEditor(preset);
+});
+
+els.btnDeletePreset.addEventListener("click", () => {
+  const name = els.presetSelect.value;
+  if (!name) return;
+  savePresets(loadPresets().filter(p => p.name !== name));
+  refreshPresetSelects();
+});
+
+/* ============================================================ BATCH PROCESSING ============================================================ */
+
+let batchFiles = [];
+let batchStopRequested = false;
+let batchRunning = false;
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|avif)$/i;
+
+els.batchFolderInput.addEventListener("change", () => {
+  batchFiles = Array.from(els.batchFolderInput.files).filter(
+    f => f.type.startsWith("image/") || IMAGE_EXT_RE.test(f.name)
+  );
+  els.batchSourceStatus.textContent = batchFiles.length
+    ? `${batchFiles.length} image${batchFiles.length === 1 ? "" : "s"} found.`
+    : "No images found in that folder.";
+  refreshPresetSelects();
+});
+
+function logBatch(text) {
+  els.batchLog.style.display = "block";
+  const line = document.createElement("div");
+  line.textContent = text;
+  els.batchLog.appendChild(line);
+  els.batchLog.scrollTop = els.batchLog.scrollHeight;
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+    img.src = url;
+  });
+}
+
+els.btnStartBatch.addEventListener("click", async () => {
+  const presetName = els.batchPresetSelect.value;
+  const preset = loadPresets().find(p => p.name === presetName);
+  if (!preset || batchFiles.length === 0 || batchRunning) return;
+
+  batchRunning = true;
+  batchStopRequested = false;
+  els.btnStartBatch.disabled = true;
+  els.btnStopBatch.disabled = false;
+  els.batchLog.innerHTML = "";
+  els.batchLog.style.display = "block";
+  const totalAngle = preset.quarterTurns * 90 + preset.fineAngle;
+
+  let done = 0;
+  for (const file of batchFiles) {
+    if (batchStopRequested) { logBatch("Stopped."); break; }
+    const label = file.webkitRelativePath || file.name;
+    els.batchStatus.textContent = `Processing ${done + 1} / ${batchFiles.length}: ${label}`;
+
+    try {
+      const img = await loadImageFromFile(file);
+      const nativeAspect = img.naturalWidth / img.naturalHeight;
+      const rotatedBoundsForImg = rotatedBounds(img.naturalWidth, img.naturalHeight, totalAngle * Math.PI / 180);
+      const cropRect = computeAutoCrop(rotatedBoundsForImg.w, rotatedBoundsForImg.h, preset.ratioMode, nativeAspect, 0.85);
+
+      // Output height is always derived from this image's own crop aspect,
+      // so a fixed ratio (e.g. 1:1) gives consistent, undistorted output
+      // across a batch of differently-shaped source photos.
+      const cropAspect = (cropRect.w * rotatedBoundsForImg.w) / (cropRect.h * rotatedBoundsForImg.h);
+      const outW = preset.outW;
+      const outH = Math.max(1, Math.round(outW / cropAspect));
+
+      const final = renderFinalCanvas(img, totalAngle, cropRect, preset.colour, outW, outH);
+      const outName = label.replace(/[\\/]/g, "_").replace(/\.[^.]+$/, "") + "_edited.png";
+      await downloadCanvasAsPng(final, outName);
+      logBatch(`✓ ${label}`);
+    } catch (e) {
+      logBatch(`✕ ${label} (failed)`);
+    }
+
+    done++;
+    els.batchProgressBar.style.width = Math.round((done / batchFiles.length) * 100) + "%";
+    await new Promise(r => setTimeout(r, 250)); // gentle pacing between downloads
+  }
+
+  els.batchStatus.textContent = batchStopRequested
+    ? `Stopped after ${done} / ${batchFiles.length}.`
+    : `Done. Processed ${done} / ${batchFiles.length}.`;
+  batchRunning = false;
+  els.btnStartBatch.disabled = false;
+  els.btnStopBatch.disabled = true;
+});
+
+els.btnStopBatch.addEventListener("click", () => { batchStopRequested = true; });
+
+refreshPresetSelects();
+window.ImagineTools = window.ImagineTools || {};
+window.ImagineTools["image-editor"] = { refreshPresets: refreshPresetSelects };
+})();
+</script>
+
+<script>
+(function () {
+"use strict";
+
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|avif|svg)$/i;
+
+const els = {
+  folderInput: document.getElementById("cm-folderInput"),
+  sourceStatus: document.getElementById("cm-sourceStatus"),
+  outW: document.getElementById("cm-outW"),
+  outH: document.getElementById("cm-outH"),
+  gap: document.getElementById("cm-gap"),
+  gapVal: document.getElementById("cm-gapVal"),
+  borderOn: document.getElementById("cm-borderOn"),
+  borderColor: document.getElementById("cm-borderColor"),
+  borderWidth: document.getElementById("cm-borderWidth"),
+  rotationOn: document.getElementById("cm-rotationOn"),
+  maxAngle: document.getElementById("cm-maxAngle"),
+  angleVal: document.getElementById("cm-angleVal"),
+  btnShuffle: document.getElementById("cm-btnShuffle"),
+  btnExport: document.getElementById("cm-btnExport"),
+  renderStatus: document.getElementById("cm-renderStatus"),
+  canvas: document.getElementById("cm-canvas")
+};
+const ctx = els.canvas.getContext("2d");
+
+let images = [];       // { img: HTMLImageElement }
+let currentLayout = []; // { x,y,w,h (normalized 0..1), imgIndex, rotFrac (-1..1) }
+
+/* ============================================================ LOADING ============================================================ */
+
+els.folderInput.addEventListener("change", async () => {
+  const files = Array.from(els.folderInput.files).filter(
+    f => f.type.startsWith("image/") || IMAGE_EXT_RE.test(f.name)
+  );
+  if (files.length === 0) {
+    els.sourceStatus.textContent = "No images found in that folder.";
+    return;
+  }
+
+  els.sourceStatus.textContent = `Loading 0 / ${files.length} images…`;
+  images = [];
+  let loaded = 0;
+
+  const loadOne = (file) => new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      images.push({ img });
+      loaded++;
+      els.sourceStatus.textContent = `Loading ${loaded} / ${files.length} images…`;
+      resolve();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      loaded++;
+      resolve(); // skip unreadable files without blocking the rest
+    };
+    img.src = url;
+  });
+
+  await Promise.all(files.map(loadOne));
+
+  if (images.length === 0) {
+    els.sourceStatus.textContent = "Couldn't load any images from that folder.";
+    return;
+  }
+
+  els.sourceStatus.textContent = `${images.length} image${images.length === 1 ? "" : "s"} loaded.`;
+  els.btnShuffle.disabled = false;
+  els.btnExport.disabled = false;
+  buildLayoutAndRender();
+});
+
+/* ============================================================ LAYOUT (recursive space partition) ============================================================ */
+// Recursively splits the canvas rectangle in two, sending a random-ish
+// subset of images to each half, until every leaf holds exactly one
+// image. This guarantees full coverage (no gaps/overlaps beyond the
+// intentional per-image gap) while still giving varied, organic cell
+// sizes -- unlike a fixed grid.
+
+function shuffledIndices(n) {
+  const arr = Array.from({ length: n }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildLayout(count) {
+  const leaves = [];
+  const order = shuffledIndices(count);
+
+  function recurse(indices, x0, x1, y0, y1) {
+    if (indices.length === 1) {
+      leaves.push({
+        x: x0, y: y0, w: x1 - x0, h: y1 - y0,
+        imgIndex: indices[0],
+        rotFrac: Math.random() * 2 - 1
+      });
+      return;
+    }
+    const n = indices.length;
+    let n1 = Math.round(n / 2);
+    if (Math.random() < 0.3) n1 += Math.random() < 0.5 ? -1 : 1;
+    n1 = Math.min(n - 1, Math.max(1, n1));
+
+    const groupA = indices.slice(0, n1);
+    const groupB = indices.slice(n1);
+
+    const w = x1 - x0, h = y1 - y0;
+    const aspect = w / h;
+    let vertical; // true = side-by-side split, false = stacked split
+    if (aspect > 1.25) vertical = Math.random() < 0.82;
+    else if (aspect < 0.8) vertical = Math.random() < 0.18;
+    else vertical = Math.random() < 0.5;
+
+    let ratio = n1 / n + (Math.random() * 0.16 - 0.08);
+    ratio = Math.min(0.78, Math.max(0.22, ratio));
+
+    if (vertical) {
+      const xm = x0 + w * ratio;
+      recurse(groupA, x0, xm, y0, y1);
+      recurse(groupB, xm, x1, y0, y1);
+    } else {
+      const ym = y0 + h * ratio;
+      recurse(groupA, x0, x1, y0, ym);
+      recurse(groupB, x0, x1, ym, y1);
+    }
+  }
+
+  recurse(order, 0, 1, 0, 1);
+  return leaves;
+}
+
+function buildLayoutAndRender() {
+  if (images.length === 0) return;
+  currentLayout = buildLayout(images.length);
+  render();
+}
+
+/* ============================================================ RENDER ============================================================ */
+
+function drawCover(context, img, x, y, w, h) {
+  const ir = img.naturalWidth / img.naturalHeight;
+  const cr = w / h;
+  let sx, sy, sw, sh;
+  if (ir > cr) {
+    sh = img.naturalHeight; sw = sh * cr; sx = (img.naturalWidth - sw) / 2; sy = 0;
+  } else {
+    sw = img.naturalWidth; sh = sw / cr; sx = 0; sy = (img.naturalHeight - sh) / 2;
+  }
+  context.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+function render() {
+  const W = Math.max(1, parseInt(els.outW.value, 10) || 1600);
+  const H = Math.max(1, parseInt(els.outH.value, 10) || 1200);
+  els.canvas.width = W;
+  els.canvas.height = H;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  if (currentLayout.length === 0) return;
+
+  const gap = parseFloat(els.gap.value) || 0;
+  const borderOn = els.borderOn.checked;
+  const borderColor = els.borderColor.value;
+  const borderWidth = Math.max(1, parseFloat(els.borderWidth.value) || 1);
+  const rotationOn = els.rotationOn.checked;
+  const maxAngle = parseFloat(els.maxAngle.value) || 0;
+
+  for (const leaf of currentLayout) {
+    const cellX = leaf.x * W, cellY = leaf.y * H, cellW = leaf.w * W, cellH = leaf.h * H;
+    const gx = cellX + gap / 2, gy = cellY + gap / 2;
+    const gw = Math.max(1, cellW - gap), gh = Math.max(1, cellH - gap);
+    const entry = images[leaf.imgIndex];
+    if (!entry) continue;
+
+    ctx.save();
+    if (rotationOn && maxAngle > 0) {
+      const angle = (leaf.rotFrac * maxAngle) * Math.PI / 180;
+      const cx = gx + gw / 2, cy = gy + gh / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.translate(-cx, -cy);
+    }
+
+    drawCover(ctx, entry.img, gx, gy, gw, gh);
+
+    if (borderOn) {
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = borderWidth;
+      ctx.strokeRect(gx + borderWidth / 2, gy + borderWidth / 2, gw - borderWidth, gh - borderWidth);
+    }
+    ctx.restore();
+  }
+}
+
+/* ============================================================ CONTROLS ============================================================ */
+
+els.gap.addEventListener("input", () => { els.gapVal.textContent = els.gap.value + "px"; render(); });
+els.maxAngle.addEventListener("input", () => { els.angleVal.textContent = els.maxAngle.value + "°"; render(); });
+[els.borderOn, els.borderColor, els.borderWidth, els.rotationOn].forEach(el =>
+  el.addEventListener("input", render)
+);
+[els.outW, els.outH].forEach(el => el.addEventListener("change", render));
+
+els.btnShuffle.addEventListener("click", buildLayoutAndRender);
+
+els.btnExport.addEventListener("click", () => {
+  els.renderStatus.textContent = "Exporting…";
+  els.canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `collage_${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    els.renderStatus.textContent = "Saved.";
+  }, "image/png");
+});
+})();
+</script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================ PALETTES ============================================================
+   Historical palette values are technical specifications (documented
+   hardware colour tables), reproduced here as plain numeric data. */
+
+function paletteBW() { return [[0,0,0],[255,255,255]]; }
+
+function paletteC64() {
+  return [
+    [0,0,0],[255,255,255],[0x68,0x37,0x2B],[0x70,0xA4,0xB2],
+    [0x6F,0x3D,0x86],[0x58,0x8D,0x43],[0x35,0x28,0x79],[0xB8,0xC7,0x6F],
+    [0x6F,0x4F,0x25],[0x43,0x39,0x00],[0x9A,0x67,0x59],[0x44,0x44,0x44],
+    [0x6C,0x6C,0x6C],[0x9A,0xD2,0x84],[0x6C,0x5E,0xB5],[0x95,0x95,0x95]
+  ];
+}
+
+function paletteCGA() {
+  return [
+    [0,0,0],[0,0,170],[0,170,0],[0,170,170],
+    [170,0,0],[170,0,170],[170,85,0],[170,170,170],
+    [85,85,85],[85,85,255],[85,255,85],[85,255,255],
+    [255,85,85],[255,85,255],[255,255,85],[255,255,255]
+  ];
+}
+
+function paletteEGA() {
+  const levels = [0, 85, 170, 255];
+  const p = [];
+  for (const r of levels) for (const g of levels) for (const b of levels) p.push([r, g, b]);
+  return p; // 64 colours
+}
+
+function paletteVGA() {
+  const p = paletteCGA().slice(); // 16
+  const steps = [0, 51, 102, 153, 204, 255];
+  for (const r of steps) for (const g of steps) for (const b of steps) p.push([r, g, b]); // 216
+  for (let i = 0; i < 24; i++) { const v = Math.round(i * 255 / 23); p.push([v, v, v]); } // 24
+  return p; // 256
+}
+
+/* ---- median-cut, weighted by pixel frequency (Heckbert 1982) ---- */
+
+function buildHistogram(imageData, quantizeFn) {
+  const map = new Map();
+  const d = imageData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i], g = d[i+1], b = d[i+2];
+    if (quantizeFn) { [r, g, b] = quantizeFn(r, g, b); }
+    const key = (r << 16) | (g << 8) | b;
+    const e = map.get(key);
+    if (e) e.count++; else map.set(key, { r, g, b, count: 1 });
+  }
+  return Array.from(map.values());
+}
+
+function channelRange(box, ch) {
+  let mn = 255, mx = 0;
+  for (const e of box) { const v = e[ch]; if (v < mn) mn = v; if (v > mx) mx = v; }
+  return mx - mn;
+}
+function longestChannel(box) {
+  const ranges = ["r","g","b"].map(ch => [ch, channelRange(box, ch)]);
+  ranges.sort((a,b) => b[1] - a[1]);
+  return ranges[0];
+}
+function boxAverage(box) {
+  let r=0,g=0,b=0,total=0;
+  for (const e of box) { r += e.r*e.count; g += e.g*e.count; b += e.b*e.count; total += e.count; }
+  return [Math.round(r/total), Math.round(g/total), Math.round(b/total)];
+}
+
+function medianCut(histogram, targetCount) {
+  let boxes = [histogram.slice()];
+  while (boxes.length < targetCount) {
+    let splitIdx = -1, splitRange = -1;
+    boxes.forEach((box, i) => {
+      if (box.length < 2) return;
+      const [, range] = longestChannel(box);
+      if (range > splitRange) { splitRange = range; splitIdx = i; }
+    });
+    if (splitIdx === -1) break; // nothing left worth splitting
+
+    const box = boxes.splice(splitIdx, 1)[0];
+    const [ch] = longestChannel(box);
+    box.sort((a,b) => a[ch] - b[ch]);
+    const total = box.reduce((s,e) => s+e.count, 0);
+    let acc = 0, at = 0;
+    for (let i = 0; i < box.length; i++) { acc += box[i].count; if (acc >= total/2) { at = i+1; break; } }
+    at = Math.max(1, Math.min(box.length - 1, at));
+    boxes.push(box.slice(0, at), box.slice(at));
+  }
+  return boxes.filter(b => b.length).map(boxAverage);
+}
+
+function quantizeToLevels(n) {
+  // snaps a channel value to the nearest of n evenly spaced levels (0..255)
+  const step = 255 / (n - 1);
+  return (v) => Math.round(Math.round(v / step) * step);
+}
+
+/* ---- Amiga (4 bits per channel = 16 levels) palettes, derived per image ---- */
+
+function buildAmigaBasePalette(imageData, baseCount) {
+  const snap4 = quantizeToLevels(16);
+  const hist = buildHistogram(imageData, (r,g,b) => [snap4(r), snap4(g), snap4(b)]);
+  const colours = medianCut(hist, baseCount);
+  return colours.map(([r,g,b]) => [snap4(r), snap4(g), snap4(b)]);
+}
+
+function buildEHBPalette(imageData) {
+  const base32 = buildAmigaBasePalette(imageData, 32);
+  const half = base32.map(([r,g,b]) => [Math.floor(r/2), Math.floor(g/2), Math.floor(b/2)]);
+  return base32.concat(half); // 64
+}
+
+/* ============================================================ AUTHENTIC RESOLUTIONS ============================================================ */
+
+const PALETTE_RESOLUTIONS = {
+  c64:    [{ label: "320×200", w: 320, h: 200 }],
+  cga:    [{ label: "320×200", w: 320, h: 200 }],
+  ega:    [{ label: "320×200", w: 320, h: 200 }, { label: "640×350", w: 640, h: 350 }],
+  vga:    [{ label: "320×200", w: 320, h: 200 }, { label: "640×480", w: 640, h: 480 }],
+  ehb:    [{ label: "320×256", w: 320, h: 256 }],
+  ham:    [{ label: "320×256", w: 320, h: 256 }, { label: "640×512 (Super Hires)", w: 640, h: 512 }],
+  bw:     [],
+  custom: []
+};
+
+/** Same progressive step-down resize used elsewhere in this project's
+ *  sibling apps: halves at most 50% per pass so the browser's own
+ *  smoothing can average properly, avoiding aliasing on large downscales
+ *  (e.g. a 4000px photo down to 320px). */
+function highQualityResize(sourceCanvas, targetW, targetH) {
+  let cur = sourceCanvas;
+  let curW = cur.width, curH = cur.height;
+  while (curW > targetW * 2 && curH > targetH * 2) {
+    const nw = Math.max(targetW, Math.round(curW / 2));
+    const nh = Math.max(targetH, Math.round(curH / 2));
+    const step = document.createElement("canvas");
+    step.width = nw; step.height = nh;
+    const sctx = step.getContext("2d");
+    sctx.imageSmoothingEnabled = true; sctx.imageSmoothingQuality = "high";
+    sctx.drawImage(cur, 0, 0, nw, nh);
+    cur = step; curW = nw; curH = nh;
+  }
+  const final = document.createElement("canvas");
+  final.width = targetW; final.height = targetH;
+  const fctx = final.getContext("2d");
+  fctx.imageSmoothingEnabled = true; fctx.imageSmoothingQuality = "high";
+  fctx.drawImage(cur, 0, 0, targetW, targetH);
+  return final;
+}
+
+/** Centre-crop source image dimensions to a target aspect ratio. */
+function centreCropRect(srcW, srcH, targetAspect) {
+  const srcAspect = srcW / srcH;
+  if (srcAspect > targetAspect) {
+    const sh = srcH, sw = sh * targetAspect;
+    return { sx: (srcW - sw) / 2, sy: 0, sw, sh };
+  } else {
+    const sw = srcW, sh = sw / targetAspect;
+    return { sx: 0, sy: (srcH - sh) / 2, sw, sh };
+  }
+}
+
+
+
+function colourDistSq(a, b) {
+  const dr = a[0]-b[0], dg = a[1]-b[1], db = a[2]-b[2];
+  return dr*dr + dg*dg + db*db;
+}
+function nearestColour(target, palette) {
+  let best = palette[0], bestDist = Infinity;
+  for (const c of palette) {
+    const d = colourDistSq(target, c);
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  return best;
+}
+
+/* ============================================================ DITHER MASKS ============================================================ */
+
+function bayerMatrix8() {
+  let m = [[0]];
+  while (m.length < 8) {
+    const n = m.length;
+    const top = [], bottom = [];
+    for (let y = 0; y < n; y++) {
+      top.push([...m[y].map(v => 4*v), ...m[y].map(v => 4*v + 2)]);
+      bottom.push([...m[y].map(v => 4*v + 3), ...m[y].map(v => 4*v + 1)]);
+    }
+    m = top.concat(bottom);
+  }
+  return m; // 8x8, values 0..63
+}
+const BAYER8 = bayerMatrix8();
+
+function orderedOffset(mode, x, y) {
+  // returns a value in [-0.5, 0.5)
+  switch (mode) {
+    case "checkerboard":
+      return ((x + y) % 2 === 0) ? -0.25 : 0.25;
+    case "hline": {
+      const pat = [0, 2, 3, 1];
+      return (pat[y % 4] / 4) - 0.5 + 0.125;
+    }
+    case "vline": {
+      const pat = [0, 2, 3, 1];
+      return (pat[x % 4] / 4) - 0.5 + 0.125;
+    }
+    case "diagonal": {
+      const pat = [0, 2, 3, 1];
+      return (pat[(x + y) % 4] / 4) - 0.5 + 0.125;
+    }
+    case "bayer":
+      return (BAYER8[y % 8][x % 8] / 64) - 0.5 + (1/128);
+    default:
+      return 0;
+  }
+}
+
+const DITHER_AMPLITUDE = 40; // ordered-dither strength, in 0-255 channel units
+
+/* ============================================================ QUANTIZE PIPELINE ============================================================ */
+
+function quantizeOrdered(imageData, palette, mode) {
+  const { width: w, height: h, data: d } = imageData;
+  const out = new ImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y*w + x) * 4;
+      const off = orderedOffset(mode, x, y) * DITHER_AMPLITUDE;
+      const target = [
+        Math.min(255, Math.max(0, d[i] + off)),
+        Math.min(255, Math.max(0, d[i+1] + off)),
+        Math.min(255, Math.max(0, d[i+2] + off))
+      ];
+      const c = nearestColour(target, palette);
+      out.data[i] = c[0]; out.data[i+1] = c[1]; out.data[i+2] = c[2]; out.data[i+3] = 255;
+    }
+  }
+  return out;
+}
+
+function quantizeErrorDiffusion(imageData, palette) {
+  const { width: w, height: h } = imageData;
+  const buf = new Float32Array(w * h * 3);
+  const d = imageData.data;
+  for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+    buf[j] = d[i]; buf[j+1] = d[i+1]; buf[j+2] = d[i+2];
+  }
+  const out = new ImageData(w, h);
+
+  function addErr(x, y, er, eg, eb, weight) {
+    if (x < 0 || x >= w || y < 0 || y >= h) return;
+    const j = (y*w + x) * 3;
+    buf[j]   += er * weight;
+    buf[j+1] += eg * weight;
+    buf[j+2] += eb * weight;
+  }
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const j = (y*w + x) * 3;
+      const r = Math.min(255, Math.max(0, buf[j]));
+      const g = Math.min(255, Math.max(0, buf[j+1]));
+      const b = Math.min(255, Math.max(0, buf[j+2]));
+      const c = nearestColour([r,g,b], palette);
+      const i = (y*w + x) * 4;
+      out.data[i] = c[0]; out.data[i+1] = c[1]; out.data[i+2] = c[2]; out.data[i+3] = 255;
+      const er = r - c[0], eg = g - c[1], eb = b - c[2];
+      addErr(x+1, y,   er, eg, eb, 7/16);
+      addErr(x-1, y+1, er, eg, eb, 3/16);
+      addErr(x,   y+1, er, eg, eb, 5/16);
+      addErr(x+1, y+1, er, eg, eb, 1/16);
+    }
+  }
+  return out;
+}
+
+function quantizeNone(imageData, palette) {
+  const { width: w, height: h, data: d } = imageData;
+  const out = new ImageData(w, h);
+  for (let i = 0; i < d.length; i += 4) {
+    const c = nearestColour([d[i], d[i+1], d[i+2]], palette);
+    out.data[i] = c[0]; out.data[i+1] = c[1]; out.data[i+2] = c[2]; out.data[i+3] = 255;
+  }
+  return out;
+}
+
+/* ---- Amiga HAM: per-scanline greedy "base colour OR modify one channel" ---- */
+
+function quantizeHAM(imageData, base16) {
+  const { width: w, height: h, data: d } = imageData;
+  const snap4 = quantizeToLevels(16);
+  const out = new ImageData(w, h);
+
+  for (let y = 0; y < h; y++) {
+    let prev = base16[0];
+    for (let x = 0; x < w; x++) {
+      const i = (y*w + x) * 4;
+      const target = [d[i], d[i+1], d[i+2]];
+
+      let best = base16[0], bestDist = Infinity;
+      for (const c of base16) {
+        const dist = colourDistSq(target, c);
+        if (dist < bestDist) { bestDist = dist; best = c; }
+      }
+      const candModifyR = [snap4(target[0]), prev[1], prev[2]];
+      const candModifyG = [prev[0], snap4(target[1]), prev[2]];
+      const candModifyB = [prev[0], prev[1], snap4(target[2])];
+      for (const cand of [candModifyR, candModifyG, candModifyB]) {
+        const dist = colourDistSq(target, cand);
+        if (dist < bestDist) { bestDist = dist; best = cand; }
+      }
+
+      out.data[i] = best[0]; out.data[i+1] = best[1]; out.data[i+2] = best[2]; out.data[i+3] = 255;
+      prev = best;
+    }
+  }
+  return out;
+}
+
+function applyPipeline(imageData, palette, isHAM, ditherMode) {
+  if (isHAM) return quantizeHAM(imageData, palette);
+  if (ditherMode === "diffusion") return quantizeErrorDiffusion(imageData, palette);
+  if (ditherMode === "none") return quantizeNone(imageData, palette);
+  return quantizeOrdered(imageData, palette, ditherMode);
+}
+
+/* ============================================================ STATE ============================================================ */
+
+let originalImg = null;
+let previewRaw = null;   // ImageData at preview resolution, unquantized
+let currentPalette = null;
+let isHAMMode = false;
+const PREVIEW_MAX = 700;
+
+const DITHER_HINTS = {
+  none: "Direct nearest-colour mapping, no texture.",
+  checkerboard: "2×2 alternating threshold pattern.",
+  hline: "Threshold varies by row, giving horizontal banding.",
+  vline: "Threshold varies by column, giving vertical banding.",
+  diagonal: "Threshold varies diagonally.",
+  diffusion: "Classic Floyd–Steinberg — spreads each pixel's rounding error onto its neighbours.",
+  bayer: "Classic 8×8 ordered dither matrix."
+};
+
+/* ============================================================ DOM ============================================================ */
+
+const els = {};
+["fileInput","loadStatus","paletteSelect","customColorsField","customColors","customColorsVal",
+ "swatches","resSection","resSelect","resHint",
+ "ditherSection","ditherSelect","ditherHint","btnExport","exportStatus",
+ "previewCanvas","placeholder",
+ "presetName","btnSavePreset","presetSelect","btnLoadPreset","btnDeletePreset",
+ "batchFolderInput","batchSourceStatus","batchPresetSelect","btnStartBatch","btnStopBatch",
+ "batchProgressBar","batchStatus","batchLog"
+].forEach(id => els[id] = document.getElementById("qz-" + id));
+const ctx = els.previewCanvas.getContext("2d");
+
+/* ============================================================ PIPELINE ============================================================ */
+
+function getSelectedResolution() {
+  const idx = parseInt(els.resSelect.value, 10);
+  if (idx < 0) return null;
+  const options = PALETTE_RESOLUTIONS[els.paletteSelect.value] || [];
+  return options[idx] || null;
+}
+
+function populateResolutionOptions() {
+  const options = PALETTE_RESOLUTIONS[els.paletteSelect.value] || [];
+  els.resSelect.innerHTML = "";
+
+  const origOpt = document.createElement("option");
+  origOpt.value = "-1";
+  origOpt.textContent = "Original size (no resize)";
+  els.resSelect.appendChild(origOpt);
+
+  options.forEach((opt, i) => {
+    const o = document.createElement("option");
+    o.value = i; o.textContent = opt.label;
+    els.resSelect.appendChild(o);
+  });
+
+  if (options.length > 0) {
+    // Pre-select the first (canonical/most common) resolution for this
+    // palette, but leave it fully overridable -- including back to
+    // Original size -- via the same dropdown.
+    els.resSelect.value = "0";
+    els.resHint.textContent = "Cropped to this resolution's aspect ratio, then resized. Choose \u201cOriginal size\u201d to skip.";
+  } else {
+    els.resSelect.value = "-1";
+    els.resHint.textContent = "No standard resolution for this palette.";
+  }
+}
+
+/** Given any HTMLImageElement and an optional {w,h} target resolution,
+ *  produces full-quality ImageData: crop-to-aspect + high-quality resize
+ *  when a resolution is given, or the untouched full original otherwise.
+ *  Used by both the single-image Export button and batch processing. */
+function computeExportImageData(img, resOption) {
+  if (resOption) {
+    const crop = centreCropRect(img.naturalWidth, img.naturalHeight, resOption.w / resOption.h);
+    const cropped = document.createElement("canvas");
+    cropped.width = Math.round(crop.sw); cropped.height = Math.round(crop.sh);
+    cropped.getContext("2d").drawImage(
+      img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, cropped.width, cropped.height
+    );
+    const resized = highQualityResize(cropped, resOption.w, resOption.h);
+    return resized.getContext("2d").getImageData(0, 0, resOption.w, resOption.h);
+  }
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const cc = c.getContext("2d");
+  cc.drawImage(img, 0, 0);
+  return cc.getImageData(0, 0, w, h);
+}
+
+function computeWorkingImageData() {
+  const res = getSelectedResolution();
+  if (res) return computeExportImageData(originalImg, res);
+  const scale = Math.min(1, PREVIEW_MAX / Math.max(originalImg.naturalWidth, originalImg.naturalHeight));
+  const w = Math.round(originalImg.naturalWidth * scale);
+  const h = Math.round(originalImg.naturalHeight * scale);
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const cc = c.getContext("2d");
+  cc.drawImage(originalImg, 0, 0, w, h);
+  return cc.getImageData(0, 0, w, h);
+}
+
+/** Pure palette builder -- takes explicit inputs rather than reading the
+ *  live UI, so batch processing can call it with a saved preset's values
+ *  against each image's own histogram. */
+function buildPaletteFor(mode, customCount, imageData) {
+  switch (mode) {
+    case "bw":  return { palette: paletteBW(), isHAM: false };
+    case "c64": return { palette: paletteC64(), isHAM: false };
+    case "cga": return { palette: paletteCGA(), isHAM: false };
+    case "ega": return { palette: paletteEGA(), isHAM: false };
+    case "vga": return { palette: paletteVGA(), isHAM: false };
+    case "ehb": return { palette: buildEHBPalette(imageData), isHAM: false };
+    case "ham": return { palette: buildAmigaBasePalette(imageData, 16), isHAM: true };
+    default:    return { palette: medianCut(buildHistogram(imageData), customCount), isHAM: false };
+  }
+}
+
+function buildPalette() {
+  const mode = els.paletteSelect.value;
+  const { palette, isHAM } = buildPaletteFor(mode, parseInt(els.customColors.value, 10), previewRaw);
+  isHAMMode = isHAM;
+  return palette;
+}
+
+function renderSwatches(palette) {
+  els.swatches.innerHTML = "";
+  palette.slice(0, 64).forEach(([r,g,b]) => {
+    const sw = document.createElement("div");
+    sw.style.background = `rgb(${r},${g},${b})`;
+    els.swatches.appendChild(sw);
+  });
+}
+
+function recomputePalette() {
+  if (!previewRaw) return;
+  currentPalette = buildPalette();
+  renderSwatches(currentPalette);
+  updateDitherAvailability();
+  redraw();
+}
+
+function updateDitherAvailability() {
+  els.ditherSection.style.opacity = isHAMMode ? 0.45 : 1;
+  els.ditherSelect.disabled = isHAMMode;
+  els.ditherHint.textContent = isHAMMode
+    ? "HAM builds its own per-pixel colour choices; dithering doesn't apply."
+    : (DITHER_HINTS[els.ditherSelect.value] || "");
+}
+
+function redraw() {
+  if (!previewRaw || !currentPalette) return;
+  els.previewCanvas.width = previewRaw.width;
+  els.previewCanvas.height = previewRaw.height;
+  const result = applyPipeline(previewRaw, currentPalette, isHAMMode, els.ditherSelect.value);
+  ctx.putImageData(result, 0, 0);
+}
+
+/* ============================================================ CONTROLS ============================================================ */
+
+function refreshWorkingImage() {
+  if (!originalImg) return;
+  previewRaw = computeWorkingImageData();
+  recomputePalette();
+}
+
+els.fileInput.addEventListener("change", () => {
+  const file = els.fileInput.files[0];
+  if (!file) return;
+  els.loadStatus.textContent = "Loading…";
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    originalImg = img;
+    els.placeholder.style.display = "none";
+    els.previewCanvas.style.display = "block";
+    els.btnExport.disabled = false;
+    els.loadStatus.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+    populateResolutionOptions();
+    refreshWorkingImage();
+  };
+  img.onerror = () => { els.loadStatus.textContent = "Couldn't load that file."; };
+  img.src = url;
+});
+
+els.paletteSelect.addEventListener("change", () => {
+  els.customColorsField.style.display = els.paletteSelect.value === "custom" ? "block" : "none";
+  populateResolutionOptions();
+  refreshWorkingImage();
+});
+els.customColors.addEventListener("input", () => {
+  els.customColorsVal.textContent = els.customColors.value;
+  recomputePalette();
+});
+els.resSelect.addEventListener("change", refreshWorkingImage);
+els.ditherSelect.addEventListener("change", () => {
+  els.ditherHint.textContent = DITHER_HINTS[els.ditherSelect.value] || "";
+  redraw();
+});
+els.customColorsField.style.display = "block";
+els.ditherHint.textContent = DITHER_HINTS.none;
+populateResolutionOptions();
+
+/* ============================================================ EXPORT (full resolution) ============================================================ */
+
+els.btnExport.addEventListener("click", () => {
+  if (!originalImg || !currentPalette) return;
+  els.btnExport.disabled = true;
+  els.exportStatus.textContent = "Rendering…";
+
+  setTimeout(() => {
+    const imageData = computeExportImageData(originalImg, getSelectedResolution());
+    const canvas = document.createElement("canvas");
+    canvas.width = imageData.width; canvas.height = imageData.height;
+    canvas.getContext("2d").putImageData(
+      applyPipeline(imageData, currentPalette, isHAMMode, els.ditherSelect.value), 0, 0
+    );
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quantized_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      els.exportStatus.textContent = "Saved.";
+      els.btnExport.disabled = false;
+    }, "image/png");
+  }, 20);
+});
+
+/* ============================================================ PRESETS (localStorage) ============================================================ */
+
+const PRESETS_KEY = "quantizerPresets_v1";
+
+function loadPresets() {
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function savePresets(list) { localStorage.setItem(PRESETS_KEY, JSON.stringify(list)); }
+
+function getCurrentSettings() {
+  return {
+    paletteMode: els.paletteSelect.value,
+    customColors: parseInt(els.customColors.value, 10),
+    ditherMode: els.ditherSelect.value,
+    resIndex: parseInt(els.resSelect.value, 10)
+  };
+}
+function applySettingsToEditor(settings) {
+  els.paletteSelect.value = settings.paletteMode;
+  els.customColorsField.style.display = settings.paletteMode === "custom" ? "block" : "none";
+  els.customColors.value = settings.customColors;
+  els.customColorsVal.textContent = settings.customColors;
+  els.ditherSelect.value = settings.ditherMode;
+  els.ditherHint.textContent = DITHER_HINTS[settings.ditherMode] || "";
+  populateResolutionOptions();
+  els.resSelect.value = String(settings.resIndex);
+  if (originalImg) refreshWorkingImage();
+}
+
+function refreshPresetSelects() {
+  const presets = loadPresets();
+  [els.presetSelect, els.batchPresetSelect].forEach(sel => {
+    const prevValue = sel.value;
+    sel.innerHTML = "";
+    if (presets.length === 0) {
+      sel.innerHTML = '<option value="">No presets saved</option>';
+    } else {
+      presets.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.name; opt.textContent = p.name;
+        sel.appendChild(opt);
+      });
+      if (presets.some(p => p.name === prevValue)) sel.value = prevValue;
+    }
+  });
+  els.btnStartBatch.disabled = !(loadPresets().length > 0 && batchFiles.length > 0);
+}
+
+els.btnSavePreset.addEventListener("click", () => {
+  const name = els.presetName.value.trim();
+  if (!name) { els.presetName.focus(); return; }
+  const presets = loadPresets().filter(p => p.name !== name);
+  presets.push({ name, ...getCurrentSettings() });
+  savePresets(presets);
+  els.presetName.value = "";
+  refreshPresetSelects();
+  els.presetSelect.value = name;
+});
+els.btnLoadPreset.addEventListener("click", () => {
+  const preset = loadPresets().find(p => p.name === els.presetSelect.value);
+  if (preset) applySettingsToEditor(preset);
+});
+els.btnDeletePreset.addEventListener("click", () => {
+  const name = els.presetSelect.value;
+  if (!name) return;
+  savePresets(loadPresets().filter(p => p.name !== name));
+  refreshPresetSelects();
+});
+
+/* ============================================================ BATCH PROCESSING ============================================================ */
+
+let batchFiles = [];
+let batchStopRequested = false;
+let batchRunning = false;
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|avif)$/i;
+
+els.batchFolderInput.addEventListener("change", () => {
+  batchFiles = Array.from(els.batchFolderInput.files).filter(
+    f => f.type.startsWith("image/") || IMAGE_EXT_RE.test(f.name)
+  );
+  els.batchSourceStatus.textContent = batchFiles.length
+    ? `${batchFiles.length} image${batchFiles.length === 1 ? "" : "s"} found.`
+    : "No images found in that folder.";
+  refreshPresetSelects();
+});
+
+function logBatch(text) {
+  els.batchLog.style.display = "block";
+  const line = document.createElement("div");
+  line.textContent = text;
+  els.batchLog.appendChild(line);
+  els.batchLog.scrollTop = els.batchLog.scrollHeight;
+}
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+    img.src = url;
+  });
+}
+function downloadCanvasAsPng(canvas, filename) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      resolve();
+    }, "image/png");
+  });
+}
+
+els.btnStartBatch.addEventListener("click", async () => {
+  const preset = loadPresets().find(p => p.name === els.batchPresetSelect.value);
+  if (!preset || batchFiles.length === 0 || batchRunning) return;
+
+  batchRunning = true;
+  batchStopRequested = false;
+  els.btnStartBatch.disabled = true;
+  els.btnStopBatch.disabled = false;
+  els.batchLog.innerHTML = "";
+  els.batchLog.style.display = "block";
+
+  const resOption = preset.resIndex >= 0 ? (PALETTE_RESOLUTIONS[preset.paletteMode] || [])[preset.resIndex] : null;
+
+  let done = 0;
+  for (const file of batchFiles) {
+    if (batchStopRequested) { logBatch("Stopped."); break; }
+    const label = file.webkitRelativePath || file.name;
+    els.batchStatus.textContent = `Processing ${done + 1} / ${batchFiles.length}: ${label}`;
+
+    try {
+      const img = await loadImageFromFile(file);
+      const imageData = computeExportImageData(img, resOption);
+      const { palette, isHAM } = buildPaletteFor(preset.paletteMode, preset.customColors, imageData);
+      const result = applyPipeline(imageData, palette, isHAM, preset.ditherMode);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = imageData.width; canvas.height = imageData.height;
+      canvas.getContext("2d").putImageData(result, 0, 0);
+
+      const outName = label.replace(/[\\/]/g, "_").replace(/\.[^.]+$/, "") + "_quantized.png";
+      await downloadCanvasAsPng(canvas, outName);
+      logBatch(`✓ ${label}`);
+    } catch (e) {
+      logBatch(`✕ ${label} (failed)`);
+    }
+
+    done++;
+    els.batchProgressBar.style.width = Math.round((done / batchFiles.length) * 100) + "%";
+    await new Promise(r => setTimeout(r, 250)); // gentle pacing between downloads
+  }
+
+  els.batchStatus.textContent = batchStopRequested
+    ? `Stopped after ${done} / ${batchFiles.length}.`
+    : `Done. Processed ${done} / ${batchFiles.length}.`;
+  batchRunning = false;
+  els.btnStartBatch.disabled = false;
+  els.btnStopBatch.disabled = true;
+});
+els.btnStopBatch.addEventListener("click", () => { batchStopRequested = true; });
+
+refreshPresetSelects();
+window.ImagineTools = window.ImagineTools || {};
+window.ImagineTools["quantizer"] = { refreshPresets: refreshPresetSelects };
+})();
+</script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================
+   BLUR ENGINE (unchanged from the verified version)
+   - Box blur: O(1)-per-pixel incremental sliding window.
+   - Gaussian: 3-pass box blur, widths chosen by Kovesi's method.
+   - Hexagon bokeh: 3 directional box passes at 0/60/120 degrees --
+     a regular hexagon is the Minkowski sum of 3 line segments
+     spaced 60 degrees apart, so blurring along those 3 directions
+     with the same radius produces a true hexagonal point-spread
+     function. Non-axis-aligned passes use shear + fast vertical
+     blur + unshear.
+   ============================================================ */
+
+function clampIdx(i, size) { return Math.max(0, Math.min(size - 1, i)); }
+
+function boxBlurHorizontal(src, w, h, radius) {
+  if (radius < 1) return src.slice();
+  const out = new Float32Array(w * h);
+  const window = 2 * radius + 1;
+  for (let y = 0; y < h; y++) {
+    const rowOff = y * w;
+    let sum = 0;
+    for (let dx = -radius; dx <= radius; dx++) sum += src[rowOff + clampIdx(dx, w)];
+    out[rowOff] = sum / window;
+    for (let x = 1; x < w; x++) {
+      sum += src[rowOff + clampIdx(x + radius, w)] - src[rowOff + clampIdx(x - radius - 1, w)];
+      out[rowOff + x] = sum / window;
+    }
+  }
+  return out;
+}
+
+function boxBlurVertical(src, w, h, radius) {
+  if (radius < 1) return src.slice();
+  const out = new Float32Array(w * h);
+  const window = 2 * radius + 1;
+  for (let x = 0; x < w; x++) {
+    let sum = 0;
+    for (let dy = -radius; dy <= radius; dy++) sum += src[clampIdx(dy, h) * w + x];
+    out[x] = sum / window;
+    for (let y = 1; y < h; y++) {
+      sum += src[clampIdx(y + radius, h) * w + x] - src[clampIdx(y - radius - 1, h) * w + x];
+      out[y * w + x] = sum / window;
+    }
+  }
+  return out;
+}
+
+function boxBlur2d(src, w, h, radius) {
+  return boxBlurVertical(boxBlurHorizontal(src, w, h, radius), w, h, radius);
+}
+
+function boxesForGauss(sigma, passes) {
+  const wIdeal = Math.sqrt((12 * sigma * sigma / passes) + 1);
+  let wl = Math.floor(wIdeal);
+  if (wl % 2 === 0) wl -= 1;
+  const wu = wl + 2;
+  const mIdeal = (12 * sigma * sigma - passes * wl * wl - 4 * passes * wl - 3 * passes) / (-4 * wl - 4);
+  const m = Math.round(mIdeal);
+  const sizes = [];
+  for (let i = 0; i < passes; i++) sizes.push(i < m ? wl : wu);
+  return sizes;
+}
+
+function gaussianBlur(src, w, h, radius) {
+  const sigma = radius;
+  let out = src;
+  for (const size of boxesForGauss(sigma, 3)) {
+    const r = Math.max(Math.floor((size - 1) / 2), 0);
+    out = boxBlur2d(out, w, h, r);
+  }
+  return out;
+}
+
+function shearHorizontal(src, w, h, shiftPerRow) {
+  const out = new Float32Array(w * h);
+  const centerY = (h - 1) / 2;
+  for (let y = 0; y < h; y++) {
+    const shift = shiftPerRow * (y - centerY);
+    const rowOff = y * w;
+    for (let x = 0; x < w; x++) {
+      let sx = x - shift;
+      sx = Math.max(0, Math.min(w - 1, sx));
+      const x0 = Math.floor(sx);
+      const x1 = Math.min(x0 + 1, w - 1);
+      const frac = sx - x0;
+      out[rowOff + x] = src[rowOff + x0] * (1 - frac) + src[rowOff + x1] * frac;
+    }
+  }
+  return out;
+}
+
+function directionalBoxBlur(src, w, h, radius, angleDeg) {
+  if (radius < 1) return src.slice();
+  const theta = angleDeg * Math.PI / 180;
+  const shear = 1 / Math.tan(theta);
+  const sheared = shearHorizontal(src, w, h, shear);
+  const blurred = boxBlurVertical(sheared, w, h, radius);
+  return shearHorizontal(blurred, w, h, -shear);
+}
+
+function hexagonBlur(src, w, h, radius) {
+  let out = boxBlurHorizontal(src, w, h, radius);
+  out = directionalBoxBlur(out, w, h, radius, 60);
+  out = directionalBoxBlur(out, w, h, radius, 120);
+  return out;
+}
+
+function radiusFor(w, h, strengthPercent) {
+  const maxRadius = Math.max(4, Math.round(Math.min(w, h) * 0.06));
+  return Math.round((Math.max(0, Math.min(100, strengthPercent)) / 100) * maxRadius);
+}
+
+function clampByte(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+
+/** Pure function: runs the selected blur on an ImageData, returns a new
+ *  ImageData. Used identically by the live preview, single-image Save,
+ *  and batch processing. */
+function applyBlur(imageData, type, strengthPercent) {
+  const { width: w, height: h, data } = imageData;
+  const radius = radiusFor(w, h, strengthPercent);
+  if (radius < 1) return imageData;
+
+  const n = w * h;
+  const r = new Float32Array(n), g = new Float32Array(n), b = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    r[i] = data[i * 4]; g[i] = data[i * 4 + 1]; b[i] = data[i * 4 + 2];
+  }
+
+  let rOut, gOut, bOut;
+  if (type === "BOX") {
+    rOut = boxBlur2d(r, w, h, radius); gOut = boxBlur2d(g, w, h, radius); bOut = boxBlur2d(b, w, h, radius);
+  } else if (type === "HEXAGON") {
+    rOut = hexagonBlur(r, w, h, radius); gOut = hexagonBlur(g, w, h, radius); bOut = hexagonBlur(b, w, h, radius);
+  } else {
+    rOut = gaussianBlur(r, w, h, radius); gOut = gaussianBlur(g, w, h, radius); bOut = gaussianBlur(b, w, h, radius);
+  }
+
+  const out = new ImageData(w, h);
+  for (let i = 0; i < n; i++) {
+    out.data[i * 4] = clampByte(rOut[i]);
+    out.data[i * 4 + 1] = clampByte(gOut[i]);
+    out.data[i * 4 + 2] = clampByte(bOut[i]);
+    out.data[i * 4 + 3] = data[i * 4 + 3];
+  }
+  return out;
+}
+
+/* ============================================================ STATE ============================================================ */
+
+const PREVIEW_MAX = 900;
+const PREVIEW_DEBOUNCE_MS = 120;
+
+let originalImg = null;
+let previewRaw = null;
+let blurType = "GAUSSIAN";
+let previewTimer = null;
+
+/* ============================================================ DOM ============================================================ */
+
+const els = {};
+["fileInput","loadStatus","strength","strengthVal","btnSave","exportStatus",
+ "previewCanvas","placeholder",
+ "presetName","btnSavePreset","presetSelect","btnLoadPreset","btnDeletePreset",
+ "batchFolderInput","batchSourceStatus","batchPresetSelect","btnStartBatch","btnStopBatch",
+ "batchProgressBar","batchStatus","batchLog"
+].forEach(id => els[id] = document.getElementById("ib-" + id));
+const chipButtons = Array.from(document.querySelectorAll('.tool-panel[data-tool="image-blur"] .chipRow [data-type]'));
+const ctx = els.previewCanvas.getContext("2d");
+
+/* ============================================================ PIPELINE ============================================================ */
+
+function imageDataFrom(img, maxDimension) {
+  let w = img.naturalWidth, h = img.naturalHeight;
+  if (maxDimension && Math.max(w, h) > maxDimension) {
+    const scale = maxDimension / Math.max(w, h);
+    w = Math.round(w * scale); h = Math.round(h * scale);
+  }
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const cc = c.getContext("2d");
+  cc.drawImage(img, 0, 0, w, h);
+  return cc.getImageData(0, 0, w, h);
+}
+
+function redraw() {
+  if (!previewRaw) return;
+  els.previewCanvas.width = previewRaw.width;
+  els.previewCanvas.height = previewRaw.height;
+  const strength = parseInt(els.strength.value, 10);
+  ctx.putImageData(applyBlur(previewRaw, blurType, strength), 0, 0);
+}
+
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(redraw, PREVIEW_DEBOUNCE_MS);
+}
+
+/* ============================================================ CONTROLS ============================================================ */
+
+els.fileInput.addEventListener("change", () => {
+  const file = els.fileInput.files[0];
+  if (!file) return;
+  els.loadStatus.textContent = "Loading…";
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    originalImg = img;
+    els.placeholder.style.display = "none";
+    els.previewCanvas.style.display = "block";
+    els.btnSave.disabled = false;
+    els.loadStatus.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+    previewRaw = imageDataFrom(img, PREVIEW_MAX);
+    redraw();
+  };
+  img.onerror = () => { els.loadStatus.textContent = "Couldn't load that file."; };
+  img.src = url;
+});
+
+chipButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    blurType = btn.dataset.type;
+    chipButtons.forEach(b => b.classList.toggle("active", b === btn));
+    schedulePreview();
+  });
+});
+
+els.strength.addEventListener("input", () => {
+  els.strengthVal.textContent = els.strength.value + "%";
+  schedulePreview();
+});
+
+/* ============================================================ EXPORT (single image, full resolution) ============================================================ */
+
+function downloadCanvasAsJpg(canvas, filename) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      resolve();
+    }, "image/jpeg", 0.92);
+  });
+}
+
+els.btnSave.addEventListener("click", () => {
+  if (!originalImg) return;
+  els.exportStatus.textContent = "Rendering full-resolution image…";
+  els.btnSave.disabled = true;
+
+  setTimeout(async () => {
+    const full = imageDataFrom(originalImg, null);
+    const strength = parseInt(els.strength.value, 10);
+    const canvas = document.createElement("canvas");
+    canvas.width = full.width; canvas.height = full.height;
+    canvas.getContext("2d").putImageData(applyBlur(full, blurType, strength), 0, 0);
+    await downloadCanvasAsJpg(canvas, `blurr_${Date.now()}.jpg`);
+    els.exportStatus.textContent = "Saved.";
+    els.btnSave.disabled = false;
+  }, 20);
+});
+
+/* ============================================================ PRESETS (localStorage) ============================================================ */
+
+const PRESETS_KEY = "imageBlurPresets_v1";
+
+function loadPresets() {
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function savePresets(list) { localStorage.setItem(PRESETS_KEY, JSON.stringify(list)); }
+
+function getCurrentSettings() {
+  return { blurType, strength: parseInt(els.strength.value, 10) };
+}
+function applySettingsToEditor(settings) {
+  blurType = settings.blurType;
+  chipButtons.forEach(b => b.classList.toggle("active", b.dataset.type === blurType));
+  els.strength.value = settings.strength;
+  els.strengthVal.textContent = settings.strength + "%";
+  if (previewRaw) redraw();
+}
+
+function refreshPresetSelects() {
+  const presets = loadPresets();
+  [els.presetSelect, els.batchPresetSelect].forEach(sel => {
+    const prevValue = sel.value;
+    sel.innerHTML = "";
+    if (presets.length === 0) {
+      sel.innerHTML = '<option value="">No presets saved</option>';
+    } else {
+      presets.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.name; opt.textContent = p.name;
+        sel.appendChild(opt);
+      });
+      if (presets.some(p => p.name === prevValue)) sel.value = prevValue;
+    }
+  });
+  els.btnStartBatch.disabled = !(loadPresets().length > 0 && batchFiles.length > 0);
+}
+
+els.btnSavePreset.addEventListener("click", () => {
+  const name = els.presetName.value.trim();
+  if (!name) { els.presetName.focus(); return; }
+  const presets = loadPresets().filter(p => p.name !== name);
+  presets.push({ name, ...getCurrentSettings() });
+  savePresets(presets);
+  els.presetName.value = "";
+  refreshPresetSelects();
+  els.presetSelect.value = name;
+});
+els.btnLoadPreset.addEventListener("click", () => {
+  const preset = loadPresets().find(p => p.name === els.presetSelect.value);
+  if (preset) applySettingsToEditor(preset);
+});
+els.btnDeletePreset.addEventListener("click", () => {
+  const name = els.presetSelect.value;
+  if (!name) return;
+  savePresets(loadPresets().filter(p => p.name !== name));
+  refreshPresetSelects();
+});
+
+/* ============================================================ BATCH PROCESSING ============================================================ */
+
+let batchFiles = [];
+let batchStopRequested = false;
+let batchRunning = false;
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|avif)$/i;
+
+els.batchFolderInput.addEventListener("change", () => {
+  batchFiles = Array.from(els.batchFolderInput.files).filter(
+    f => f.type.startsWith("image/") || IMAGE_EXT_RE.test(f.name)
+  );
+  els.batchSourceStatus.textContent = batchFiles.length
+    ? `${batchFiles.length} image${batchFiles.length === 1 ? "" : "s"} found.`
+    : "No images found in that folder.";
+  refreshPresetSelects();
+});
+
+function logBatch(text) {
+  els.batchLog.style.display = "block";
+  const line = document.createElement("div");
+  line.textContent = text;
+  els.batchLog.appendChild(line);
+  els.batchLog.scrollTop = els.batchLog.scrollHeight;
+}
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+    img.src = url;
+  });
+}
+
+els.btnStartBatch.addEventListener("click", async () => {
+  const preset = loadPresets().find(p => p.name === els.batchPresetSelect.value);
+  if (!preset || batchFiles.length === 0 || batchRunning) return;
+
+  batchRunning = true;
+  batchStopRequested = false;
+  els.btnStartBatch.disabled = true;
+  els.btnStopBatch.disabled = false;
+  els.batchLog.innerHTML = "";
+  els.batchLog.style.display = "block";
+
+  let done = 0;
+  for (const file of batchFiles) {
+    if (batchStopRequested) { logBatch("Stopped."); break; }
+    const label = file.webkitRelativePath || file.name;
+    els.batchStatus.textContent = `Processing ${done + 1} / ${batchFiles.length}: ${label}`;
+
+    try {
+      const img = await loadImageFromFile(file);
+      const full = imageDataFrom(img, null);
+      const canvas = document.createElement("canvas");
+      canvas.width = full.width; canvas.height = full.height;
+      canvas.getContext("2d").putImageData(applyBlur(full, preset.blurType, preset.strength), 0, 0);
+
+      const outName = label.replace(/[\\/]/g, "_").replace(/\.[^.]+$/, "") + "_blurr.jpg";
+      await downloadCanvasAsJpg(canvas, outName);
+      logBatch(`✓ ${label}`);
+    } catch (e) {
+      logBatch(`✕ ${label} (failed)`);
+    }
+
+    done++;
+    els.batchProgressBar.style.width = Math.round((done / batchFiles.length) * 100) + "%";
+    await new Promise(r => setTimeout(r, 250)); // gentle pacing between downloads
+  }
+
+  els.batchStatus.textContent = batchStopRequested
+    ? `Stopped after ${done} / ${batchFiles.length}.`
+    : `Done. Processed ${done} / ${batchFiles.length}.`;
+  batchRunning = false;
+  els.btnStartBatch.disabled = false;
+  els.btnStopBatch.disabled = true;
+});
+els.btnStopBatch.addEventListener("click", () => { batchStopRequested = true; });
+
+refreshPresetSelects();
+window.ImagineTools = window.ImagineTools || {};
+window.ImagineTools["image-blur"] = { refreshPresets: refreshPresetSelects };
+})();
+</script>
+
+<script>
+(function () {
+"use strict";
+
+/* ============================================================ BLUR ENGINE ============================================================
+   Same verified approach as prior projects: O(1)-per-pixel sliding-window
+   box blur, Gaussian approximated via 3 box passes (Kovesi's method). */
+
+function clampIdx(i, size) { return Math.max(0, Math.min(size - 1, i)); }
+
+function boxBlurHorizontal(src, w, h, radius) {
+  if (radius < 1) return src.slice();
+  const out = new Float32Array(w * h);
+  const window = 2 * radius + 1;
+  for (let y = 0; y < h; y++) {
+    const rowOff = y * w;
+    let sum = 0;
+    for (let dx = -radius; dx <= radius; dx++) sum += src[rowOff + clampIdx(dx, w)];
+    out[rowOff] = sum / window;
+    for (let x = 1; x < w; x++) {
+      sum += src[rowOff + clampIdx(x + radius, w)] - src[rowOff + clampIdx(x - radius - 1, w)];
+      out[rowOff + x] = sum / window;
+    }
+  }
+  return out;
+}
+function boxBlurVertical(src, w, h, radius) {
+  if (radius < 1) return src.slice();
+  const out = new Float32Array(w * h);
+  const window = 2 * radius + 1;
+  for (let x = 0; x < w; x++) {
+    let sum = 0;
+    for (let dy = -radius; dy <= radius; dy++) sum += src[clampIdx(dy, h) * w + x];
+    out[x] = sum / window;
+    for (let y = 1; y < h; y++) {
+      sum += src[clampIdx(y + radius, h) * w + x] - src[clampIdx(y - radius - 1, h) * w + x];
+      out[y * w + x] = sum / window;
+    }
+  }
+  return out;
+}
+function boxBlur2d(src, w, h, radius) { return boxBlurVertical(boxBlurHorizontal(src, w, h, radius), w, h, radius); }
+
+function boxesForGauss(sigma, passes) {
+  const wIdeal = Math.sqrt((12 * sigma * sigma / passes) + 1);
+  let wl = Math.floor(wIdeal);
+  if (wl % 2 === 0) wl -= 1;
+  const wu = wl + 2;
+  const mIdeal = (12 * sigma * sigma - passes * wl * wl - 4 * passes * wl - 3 * passes) / (-4 * wl - 4);
+  const m = Math.round(mIdeal);
+  const sizes = [];
+  for (let i = 0; i < passes; i++) sizes.push(i < m ? wl : wu);
+  return sizes;
+}
+function gaussianBlur(src, w, h, radius) {
+  let out = src;
+  for (const size of boxesForGauss(radius, 3)) {
+    out = boxBlur2d(out, w, h, Math.max(Math.floor((size - 1) / 2), 0));
+  }
+  return out;
+}
+
+function gaussianBlurImageData(imageData, radius) {
+  const { width: w, height: h, data } = imageData;
+  const n = w * h;
+  if (radius < 1) return new ImageData(new Uint8ClampedArray(data), w, h);
+  const r = new Float32Array(n), g = new Float32Array(n), b = new Float32Array(n);
+  for (let i = 0; i < n; i++) { r[i] = data[i*4]; g[i] = data[i*4+1]; b[i] = data[i*4+2]; }
+  const rOut = gaussianBlur(r, w, h, radius), gOut = gaussianBlur(g, w, h, radius), bOut = gaussianBlur(b, w, h, radius);
+  const out = new ImageData(w, h);
+  for (let i = 0; i < n; i++) {
+    out.data[i*4] = rOut[i]; out.data[i*4+1] = gOut[i]; out.data[i*4+2] = bOut[i]; out.data[i*4+3] = data[i*4+3];
+  }
+  return out;
+}
+
+/* ============================================================ COLOUR ADJUST ============================================================ */
+
+function contrastFactor(c255) { return (259 * (c255 + 255)) / (255 * (259 - c255)); }
+
+function applyColour(imageData, brightness, contrast, saturationPct) {
+  const out = new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
+  const d = out.data;
+  const cf = contrastFactor(contrast * 2.55);
+  const satF = saturationPct / 100;
+  const bAdd = brightness * 2.55;
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i], g = d[i+1], b = d[i+2];
+    r += bAdd; g += bAdd; b += bAdd;
+    r = cf * (r - 128) + 128; g = cf * (g - 128) + 128; b = cf * (b - 128) + 128;
+    const gray = 0.299*r + 0.587*g + 0.114*b;
+    r = gray + (r - gray) * satF; g = gray + (g - gray) * satF; b = gray + (b - gray) * satF;
+    d[i] = r; d[i+1] = g; d[i+2] = b;
+  }
+  return out;
+}
+
+/* ============================================================ MASK (distance field) ============================================================ */
+
+function smoothstep(e0, e1, x) {
+  if (e0 >= e1) return x < e0 ? 0 : 1;
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
+
+/** Returns 0 (fully sharp) .. 1 (fully blurred) for pixel (px,py), in the
+ *  pixel space of whichever canvas is currently being rendered. */
+function maskAt(px, py, W, H, focus) {
+  if (focus.mode === "linear") {
+    const cx = focus.cx * W, cy = focus.cy * H;
+    const angleRad = focus.angleDeg * Math.PI / 180;
+    const nx = -Math.sin(angleRad), ny = Math.cos(angleRad);
+    const dist = Math.abs((px - cx) * nx + (py - cy) * ny);
+    const fw = (focus.focusWidthPct / 100) * (H * 0.5);
+    const tw = Math.max(1, (focus.transitionPct / 100) * (H * 0.5));
+    return smoothstep(fw, fw + tw, dist);
+  } else {
+    const cx = focus.cx * W, cy = focus.cy * H;
+    const rx = Math.max(1, (focus.aperturePct / 100) * (W * 0.5));
+    const ry = rx * 0.45;
+    const dx = (px - cx) / rx, dy = (py - cy) / ry;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    const trans = Math.max(0.02, (focus.transitionPct / 100) * (W * 0.5) / rx);
+    return smoothstep(1, 1 + trans, d);
+  }
+}
+
+function composite(baseData, blurredData, focus) {
+  const W = baseData.width, H = baseData.height;
+  const out = new ImageData(W, H);
+  const bd = baseData.data, bl = blurredData.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const m = maskAt(x, y, W, H, focus);
+      out.data[i]   = bd[i]   * (1 - m) + bl[i]   * m;
+      out.data[i+1] = bd[i+1] * (1 - m) + bl[i+1] * m;
+      out.data[i+2] = bd[i+2] * (1 - m) + bl[i+2] * m;
+      out.data[i+3] = 255;
+    }
+  }
+  return out;
+}
+
+/* ============================================================ STATE ============================================================ */
+
+const focus = {
+  mode: "linear",
+  cx: 0.5, cy: 0.5,
+  angleDeg: 0,
+  focusWidthPct: 15,
+  aperturePct: 30,
+  transitionPct: 20
+};
+let blurAmountPct = 50;
+let brightness = 0, contrast = 15, saturation = 130;
+
+let originalImg = null;   // full-resolution HTMLImageElement
+let baseAdjusted = null;  // preview-res, colour-adjusted ImageData (cached)
+let blurredAdjusted = null; // preview-res, blurred version of baseAdjusted (cached)
+
+const PREVIEW_MAX = 900;
+
+/* ============================================================ DOM ============================================================ */
+
+const els = {};
+["fileInput","loadStatus","tabLinear","tabElliptical","linearControls","ellipticalControls","dragHint",
+ "angle","angleVal","focusWidth","focusWidthVal","aperture","apertureVal","transition","transitionVal",
+ "blurAmount","blurVal","brightness","brightnessVal","contrast","contrastVal","saturation","saturationVal",
+ "btnExport","exportStatus","previewCanvas","placeholder"
+].forEach(id => els[id] = document.getElementById("ts-" + id));
+
+const ctx = els.previewCanvas.getContext("2d");
+
+/* ============================================================ PIPELINE ============================================================ */
+
+function recomputeBase() {
+  if (!originalImg) return;
+  const off = document.createElement("canvas");
+  const scale = Math.min(1, PREVIEW_MAX / Math.max(originalImg.naturalWidth, originalImg.naturalHeight));
+  off.width = Math.round(originalImg.naturalWidth * scale);
+  off.height = Math.round(originalImg.naturalHeight * scale);
+  const octx = off.getContext("2d");
+  octx.drawImage(originalImg, 0, 0, off.width, off.height);
+  const raw = octx.getImageData(0, 0, off.width, off.height);
+  baseAdjusted = applyColour(raw, brightness, contrast, saturation);
+  recomputeBlur();
+}
+
+function recomputeBlur() {
+  if (!baseAdjusted) return;
+  const radius = Math.round((blurAmountPct / 100) * Math.min(baseAdjusted.width, baseAdjusted.height) * 0.08);
+  blurredAdjusted = gaussianBlurImageData(baseAdjusted, radius);
+  redraw();
+}
+
+function redraw() {
+  if (!baseAdjusted || !blurredAdjusted) return;
+  els.previewCanvas.width = baseAdjusted.width;
+  els.previewCanvas.height = baseAdjusted.height;
+  const result = composite(baseAdjusted, blurredAdjusted, focus);
+  ctx.putImageData(result, 0, 0);
+  drawOverlay();
+}
+
+function drawOverlay() {
+  const W = els.previewCanvas.width, H = els.previewCanvas.height;
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = 3;
+
+  const cx = focus.cx * W, cy = focus.cy * H;
+
+  if (focus.mode === "linear") {
+    const angleRad = focus.angleDeg * Math.PI / 180;
+    const dirX = Math.cos(angleRad), dirY = Math.sin(angleRad);
+    const nx = -Math.sin(angleRad), ny = Math.cos(angleRad);
+    const fw = (focus.focusWidthPct / 100) * (H * 0.5);
+    const len = Math.max(W, H) * 1.5;
+    [-fw, fw].forEach(off => {
+      ctx.beginPath();
+      ctx.moveTo(cx + nx*off - dirX*len, cy + ny*off - dirY*len);
+      ctx.lineTo(cx + nx*off + dirX*len, cy + ny*off + dirY*len);
+      ctx.stroke();
+    });
+    // rotation handle
+    const handleDist = Math.min(W, H) * 0.28;
+    const hx = cx + dirX * handleDist, hy = cy + dirY * handleDist;
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(hx, hy); ctx.stroke();
+    ctx.fillStyle = "#6c8cff";
+    ctx.beginPath(); ctx.arc(hx, hy, 8, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  } else {
+    const rx = Math.max(1, (focus.aperturePct / 100) * (W * 0.5));
+    const ry = rx * 0.45;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#6c8cff";
+  ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+}
+
+/* ============================================================ IMAGE LOAD ============================================================ */
+
+els.fileInput.addEventListener("change", () => {
+  const file = els.fileInput.files[0];
+  if (!file) return;
+  els.loadStatus.textContent = "Loading…";
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    originalImg = img;
+    els.placeholder.style.display = "none";
+    els.previewCanvas.style.display = "block";
+    els.btnExport.disabled = false;
+    els.loadStatus.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+    recomputeBase();
+  };
+  img.onerror = () => { els.loadStatus.textContent = "Couldn't load that file."; };
+  img.src = url;
+});
+
+/* ============================================================ CONTROLS ============================================================ */
+
+function setMode(mode) {
+  focus.mode = mode;
+  els.tabLinear.classList.toggle("active", mode === "linear");
+  els.tabElliptical.classList.toggle("active", mode === "elliptical");
+  els.linearControls.style.display = mode === "linear" ? "block" : "none";
+  els.ellipticalControls.style.display = mode === "elliptical" ? "block" : "none";
+  els.dragHint.textContent = mode === "linear"
+    ? "Click or drag on the image to move the focus line. Drag the small handle to rotate it."
+    : "Click or drag on the image to move the aperture.";
+  redraw();
+}
+els.tabLinear.addEventListener("click", () => setMode("linear"));
+els.tabElliptical.addEventListener("click", () => setMode("elliptical"));
+
+els.angle.addEventListener("input", () => {
+  focus.angleDeg = +els.angle.value;
+  els.angleVal.textContent = focus.angleDeg + "°";
+  redraw();
+});
+els.focusWidth.addEventListener("input", () => {
+  focus.focusWidthPct = +els.focusWidth.value;
+  els.focusWidthVal.textContent = focus.focusWidthPct + "%";
+  redraw();
+});
+els.aperture.addEventListener("input", () => {
+  focus.aperturePct = +els.aperture.value;
+  els.apertureVal.textContent = focus.aperturePct + "%";
+  redraw();
+});
+els.transition.addEventListener("input", () => {
+  focus.transitionPct = +els.transition.value;
+  els.transitionVal.textContent = focus.transitionPct + "%";
+  redraw();
+});
+els.blurAmount.addEventListener("input", () => {
+  blurAmountPct = +els.blurAmount.value;
+  els.blurVal.textContent = blurAmountPct + "%";
+  recomputeBlur();
+});
+els.brightness.addEventListener("input", () => {
+  brightness = +els.brightness.value;
+  els.brightnessVal.textContent = brightness;
+  recomputeBase();
+});
+els.contrast.addEventListener("input", () => {
+  contrast = +els.contrast.value;
+  els.contrastVal.textContent = contrast;
+  recomputeBase();
+});
+els.saturation.addEventListener("input", () => {
+  saturation = +els.saturation.value;
+  els.saturationVal.textContent = saturation + "%";
+  recomputeBase();
+});
+
+/* ============================================================ DRAG INTERACTION ============================================================ */
+
+let dragMode = null; // 'move' | 'rotate' | null
+
+function toCanvasPx(clientX, clientY) {
+  const rect = els.previewCanvas.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) * (els.previewCanvas.width / rect.width),
+    y: (clientY - rect.top) * (els.previewCanvas.height / rect.height)
+  };
+}
+
+els.previewCanvas.addEventListener("pointerdown", (e) => {
+  if (!baseAdjusted) return;
+  const W = els.previewCanvas.width, H = els.previewCanvas.height;
+  const p = toCanvasPx(e.clientX, e.clientY);
+  const cx = focus.cx * W, cy = focus.cy * H;
+
+  if (focus.mode === "linear") {
+    const angleRad = focus.angleDeg * Math.PI / 180;
+    const handleDist = Math.min(W, H) * 0.28;
+    const hx = cx + Math.cos(angleRad) * handleDist, hy = cy + Math.sin(angleRad) * handleDist;
+    if (Math.hypot(p.x - hx, p.y - hy) < 16) { dragMode = "rotate"; }
+    else { dragMode = "move"; focus.cx = p.x / W; focus.cy = p.y / H; }
+  } else {
+    dragMode = "move";
+    focus.cx = p.x / W; focus.cy = p.y / H;
+  }
+
+  els.previewCanvas.classList.add("dragging");
+  els.previewCanvas.setPointerCapture(e.pointerId);
+  redraw();
+});
+
+els.previewCanvas.addEventListener("pointermove", (e) => {
+  if (!dragMode) return;
+  const W = els.previewCanvas.width, H = els.previewCanvas.height;
+  const p = toCanvasPx(e.clientX, e.clientY);
+
+  if (dragMode === "move") {
+    focus.cx = Math.min(1, Math.max(0, p.x / W));
+    focus.cy = Math.min(1, Math.max(0, p.y / H));
+  } else if (dragMode === "rotate") {
+    const cx = focus.cx * W, cy = focus.cy * H;
+    let deg = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
+    if (deg < 0) deg += 180;
+    if (deg >= 180) deg -= 180;
+    focus.angleDeg = deg;
+    els.angle.value = Math.round(deg);
+    els.angleVal.textContent = Math.round(deg) + "°";
+  }
+  redraw();
+});
+
+function endDrag(e) {
+  dragMode = null;
+  els.previewCanvas.classList.remove("dragging");
+}
+els.previewCanvas.addEventListener("pointerup", endDrag);
+els.previewCanvas.addEventListener("pointercancel", endDrag);
+
+/* ============================================================ EXPORT (full resolution) ============================================================ */
+
+els.btnExport.addEventListener("click", () => {
+  if (!originalImg) return;
+  els.exportStatus.textContent = "Rendering full-resolution image…";
+  els.btnExport.disabled = true;
+
+  setTimeout(() => {
+    const off = document.createElement("canvas");
+    off.width = originalImg.naturalWidth;
+    off.height = originalImg.naturalHeight;
+    const octx = off.getContext("2d");
+    octx.drawImage(originalImg, 0, 0);
+    const raw = octx.getImageData(0, 0, off.width, off.height);
+
+    const adjusted = applyColour(raw, brightness, contrast, saturation);
+    const radius = Math.round((blurAmountPct / 100) * Math.min(off.width, off.height) * 0.08);
+    const blurred = gaussianBlurImageData(adjusted, radius);
+    const result = composite(adjusted, blurred, focus);
+
+    octx.putImageData(result, 0, 0);
+    off.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tiltshift_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      els.exportStatus.textContent = "Saved.";
+      els.btnExport.disabled = false;
+    }, "image/png");
+  }, 20);
+});
+})();
+</script>
+</body>
+</html>
