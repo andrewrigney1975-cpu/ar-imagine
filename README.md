@@ -17,7 +17,7 @@ Five image tools in a single HTML page: an editor, a collage maker, a retro pale
 ## Tools
 
 - **Image Editor**: rotate (90° steps plus a fine angle), crop freely or to a fixed aspect ratio (original, 1:1, 4:3, 3:4, 16:9, 9:16, 3:2), set the output size, and adjust hue, brightness, saturation and contrast. Colour filters: greyscale, black & white, B&W vivid, duotone and tritone (with your choice of colours), sepia, colourise (an overall tint), invert and cross-process, each with adjustable strength.
-- **Collage Maker**: lays out a folder of photos at any output size, with adjustable gaps, an optional coloured border, optional random rotation, and a shuffle button for a new layout.
+- **Collage Maker**: lays out a folder of photos at any output size, with adjustable gaps, an optional coloured border, optional random rotation, and a shuffle button for a new layout. It can include subfolders, and can take a random 1, 2, 4, 8, 16 or 32 images from each folder. With a number picked, a shuffle also picks a new set.
 - **Quantizer**: reduces a photo to a retro palette, either B&W (1-bit), Commodore 64, CGA, EGA, VGA, Amiga EHB and HAM, or a custom best-fit palette of up to 256 colours. Seven dithering modes are available, including Floyd–Steinberg and 8×8 Bayer.
 - **Image Blur**: Gaussian, box or hexagonal blur at an adjustable strength.
 - **Tilt-Shift**: a linear or elliptical focus region you drag and rotate on the image, with blur amount and miniature-look colour settings.
@@ -104,7 +104,7 @@ Install on a connected device with `adb install -r android/app/build/outputs/apk
 What's different on Android:
 
 - **Saving**: an Android WebView can't download files, so a small native plugin (`ImagineFilesPlugin`) saves them instead. Images go to **Pictures/Imagine**, where they appear in your gallery. Preset exports go to **Download/Imagine**.
-- **Batch and collage sources**: Android has no folder picker for web content, so **Select Folder…** becomes **Select Photos…**, a multi-select photo picker.
+- **Batch and collage sources**: Android has no folder picker for web content, so **Select Folder…** becomes **Select Photos…**, a multi-select photo picker. The Collage Maker treats the picked photos as one folder, so **Images per Folder** takes that many at random from the selection.
 - **Layout**: on narrow screens the tools move to a row across the top, with the image above the controls.
 
 ## Regenerating icons
