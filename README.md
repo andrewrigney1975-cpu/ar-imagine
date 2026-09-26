@@ -3,11 +3,11 @@
 Five image tools in a single HTML page: an editor, a collage maker, a retro palette quantizer, a blur tool and a tilt-shift miniature effect. Everything runs locally in the browser, so photos never leave your device. It's packaged for the web (Docker + nginx, installable as a PWA), Windows desktop (Electron) and Android (Capacitor).
 
 <p align="center">
-  <img src="docs/desktop-editor.png" alt="Imagine's Image Editor on the desktop, with a sunset photo loaded and a crop box drawn over it" width="800">
+  <img src="docs/desktop-editor.png" alt="Imagine's Image Editor on the desktop, with a Duotone filter turning a sunset photo navy and peach, and the Filter panel open" width="800">
 </p>
 
 <p align="center">
-  <img src="docs/android-editor.png" alt="Imagine's Image Editor on a Pixel 10a" width="240">
+  <img src="docs/android-editor.png" alt="Imagine's Image Editor on a Pixel 10a, with a Tritone filter and its three colour pickers" width="240">
   &nbsp;
   <img src="docs/android-quantizer.png" alt="Imagine's Quantizer on a Pixel 10a" width="240">
   &nbsp;
