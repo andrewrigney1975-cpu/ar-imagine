@@ -2,11 +2,13 @@ package com.andrewrigney.imagine;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -21,6 +23,9 @@ import java.io.OutputStream;
  * <a download> links, so imagine.html sends the file here as base64 instead.
  * Images go to Pictures/Imagine (so they show up in the gallery), anything
  * else (preset exports) to Download/Imagine.
+ *
+ * Also reports the screen's exact size in pixels, which the page can only
+ * estimate (screen.width is in whole CSS pixels).
  */
 @CapacitorPlugin(name = "ImagineFiles")
 public class ImagineFilesPlugin extends Plugin {
@@ -57,6 +62,25 @@ public class ImagineFilesPlugin extends Plugin {
         } catch (Exception e) {
             call.reject("Couldn't save " + filename + ": " + e.getMessage(), e);
         }
+    }
+
+    @PluginMethod
+    public void screenSize(PluginCall call) {
+        int width, height;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Rect bounds = getActivity().getWindowManager().getMaximumWindowMetrics().getBounds();
+            width = bounds.width();
+            height = bounds.height();
+        } else {
+            DisplayMetrics metrics = new DisplayMetrics();
+            getActivity().getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
+            width = metrics.widthPixels;
+            height = metrics.heightPixels;
+        }
+        JSObject result = new JSObject();
+        result.put("width", width);
+        result.put("height", height);
+        call.resolve(result);
     }
 
     private void saveToMediaStore(String filename, String mimeType, String folder, boolean image, byte[] bytes)
