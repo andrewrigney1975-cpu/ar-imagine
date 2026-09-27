@@ -1,6 +1,6 @@
 // Imagine service worker: precaches the app shell, serves it offline,
 // and caches Google Fonts at runtime.
-const VERSION = 'imagine-v1.2';
+const VERSION = 'imagine-v1.3';
 const SHELL = [
   './',
   './imagine.html',
