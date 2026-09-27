@@ -431,6 +431,8 @@
         <div class="field"><label>Width (px)</label><input type="number" id="cm-outW" value="1600" min="100" max="8000"></div>
         <div class="field"><label>Height (px)</label><input type="number" id="cm-outH" value="1200" min="100" max="8000"></div>
       </div>
+      <button id="cm-btnScreenSize">Use Screen Size</button>
+      <div class="hint">Starts at your screen's resolution; after that, the last size you used is remembered.</div>
     </section>
 
     <section>
@@ -1763,6 +1765,7 @@ const els = {
   perFolder: document.getElementById("cm-perFolder"),
   outW: document.getElementById("cm-outW"),
   outH: document.getElementById("cm-outH"),
+  btnScreenSize: document.getElementById("cm-btnScreenSize"),
   gap: document.getElementById("cm-gap"),
   gapVal: document.getElementById("cm-gapVal"),
   borderOn: document.getElementById("cm-borderOn"),
@@ -2027,7 +2030,63 @@ els.maxAngle.addEventListener("input", () => { els.angleVal.textContent = els.ma
 [els.borderOn, els.borderColor, els.borderWidth, els.rotationOn].forEach(el =>
   el.addEventListener("input", render)
 );
-[els.outW, els.outH].forEach(el => el.addEventListener("change", render));
+/* ============================================================ OUTPUT SIZE ============================================================
+   A first collage defaults to the screen's resolution in device pixels (the
+   size a wallpaper needs); after that, the last size used is remembered. */
+
+const SIZE_KEY = "collageSize_v1";
+const clampSize = (v) => Math.min(8000, Math.max(100, Math.round(v)));
+
+async function screenSize() {
+  // In the Android app, ask Android: screen.width is in CSS pixels rounded to
+  // a whole number, so scaling it back up can land a pixel or two out.
+  const cap = window.Capacitor;
+  if (cap && cap.isNativePlatform && cap.isNativePlatform()) {
+    try {
+      const { width, height } = await cap.Plugins.ImagineFiles.screenSize();
+      return { w: clampSize(width), h: clampSize(height) };
+    } catch (e) { /* fall through to the browser's figures */ }
+  }
+  const dpr = window.devicePixelRatio || 1;
+  return { w: clampSize(screen.width * dpr), h: clampSize(screen.height * dpr) };
+}
+
+function savedSize() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SIZE_KEY));
+    if (s && s.w > 0 && s.h > 0) return { w: clampSize(s.w), h: clampSize(s.h) };
+  } catch (e) { /* unreadable: treat as unset */ }
+  return null;
+}
+
+function setSize({ w, h }) {
+  els.outW.value = w;
+  els.outH.value = h;
+  render();
+}
+
+function saveSize() {
+  try {
+    localStorage.setItem(SIZE_KEY, JSON.stringify({ w: +els.outW.value, h: +els.outH.value }));
+  } catch (e) { /* storage unavailable: the size just won't persist */ }
+}
+
+[els.outW, els.outH].forEach(el => el.addEventListener("change", () => {
+  el.value = clampSize(+el.value || (el === els.outW ? 1600 : 1200));
+  saveSize();
+  render();
+}));
+
+els.btnScreenSize.addEventListener("click", async () => {
+  setSize(await screenSize());
+  saveSize();
+});
+
+(async () => {
+  const screenDims = await screenSize();
+  els.btnScreenSize.textContent = `Use Screen Size (${screenDims.w} × ${screenDims.h})`;
+  setSize(savedSize() || screenDims);
+})();
 
 // With n images per folder, a shuffle also picks a new random set.
 els.btnShuffle.addEventListener("click", () => {
